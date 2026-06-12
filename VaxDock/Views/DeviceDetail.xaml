@@ -1,0 +1,29 @@
+<Window x:Class="VaxDrive.VaxDock.Views.DeviceDetail"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Device Details" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <StackPanel Grid.Row="0">
+            <TextBlock Text="Device Findings" Style="{StaticResource HeadingStyle}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <TextBlock Text="Device ID: " FontWeight="Bold"/>
+                <TextBlock x:Name="DeviceIdText" Margin="0,0,20,0"/>
+            </StackPanel>
+        </StackPanel>
+
+        <DataGrid x:Name="FindingsGrid" Grid.Row="1" AutoGenerateColumns="False" IsReadOnly="True" MouseDoubleClick="FindingsGrid_MouseDoubleClick">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="CVE ID" Binding="{Binding CveId}" Width="150"/>
+                <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="100"/>
+                <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="200"/>
+                <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                <DataGridTextColumn Header="Resolved At" Binding="{Binding ResolvedAt}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>

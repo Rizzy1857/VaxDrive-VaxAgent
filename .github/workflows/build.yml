@@ -1,0 +1,46 @@
+name: VaxDrive CI
+
+on: [push, pull_request]
+
+jobs:
+  build-agent-net8:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet build VaxAgent/VaxAgent.csproj -f net8.0 -c Release
+      - run: dotnet publish VaxAgent/VaxAgent.csproj -f net8.0 -c Release -r win-x64 --self-contained
+
+  build-agent-net35:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: dotnet build VaxAgent/VaxAgent.csproj -f net35 -c Release
+
+  build-dock:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet build VaxDock/VaxDock.csproj -c Release
+
+  test:
+    runs-on: windows-latest
+    needs: [build-agent-net8, build-dock]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - run: dotnet test Tests/VaxAgent.Tests/VaxAgent.Tests.csproj --logger trx
+      - run: dotnet test Tests/VaxDock.Tests/VaxDock.Tests.csproj --logger trx
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

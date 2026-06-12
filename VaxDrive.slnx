@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/VaxAgent.Tests/VaxAgent.Tests.csproj" />
+    <Project Path="Tests/VaxDock.Tests/VaxDock.Tests.csproj" />
+  </Folder>
+  <Project Path="VaxAgent/VaxAgent.csproj" />
+  <Project Path="VaxDock/VaxDock.csproj" />
+</Solution>
