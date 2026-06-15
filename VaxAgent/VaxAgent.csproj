@@ -1,25 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net8.0;net35</TargetFrameworks>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <StartupObject>VaxDrive.VaxAgent.Cli.AgentCli</StartupObject>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable Condition="'$(TargetFramework)'=='net8.0'">enable</Nullable>
-    <PublishSingleFile Condition="'$(TargetFramework)'=='net8.0'">true</PublishSingleFile>
-    <SelfContained Condition="'$(TargetFramework)'=='net8.0'">true</SelfContained>
-    <RuntimeIdentifier Condition="'$(TargetFramework)'=='net8.0'">win-x64</RuntimeIdentifier>
+    <Nullable>enable</Nullable>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="VaxAgent.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- Shared models via file linking to support dual targeting without a separate netstandard library -->
     <Compile Include="..\Models\**\*.cs" Link="Models\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- Shared data services -->
+    <Compile Include="..\VaxDock\Data\CveRepository.cs" Link="Data\CveRepository.cs" />
+    <Compile Include="..\VaxDock\Services\Nvd\NvdPaginationEngine.cs" Link="Services\Nvd\NvdPaginationEngine.cs" />
+    <Compile Include="..\VaxDock\Services\Nvd\SeverityDeltaComputer.cs" Link="Services\Nvd\SeverityDeltaComputer.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)'=='net8.0'">
+  <ItemGroup>
     <PackageReference Include="System.Management" Version="8.0.0" />
     <PackageReference Include="SharpPcap" Version="6.2.5" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'=='net35'">
-    <PackageReference Include="SharpPcap" Version="4.2.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.6" />
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="8.0.0" />
+    <PackageReference Include="System.Diagnostics.EventLog" Version="8.0.0" />
   </ItemGroup>
 </Project>

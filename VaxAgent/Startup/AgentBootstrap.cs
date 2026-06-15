@@ -27,6 +27,7 @@ public class AgentBootstrap
             {
                 "IRONKEY" => new IronKeyTokenProvider(),
                 "KINGSTON" => new KingstonTokenProvider(),
+                "MOCK" => new MockTokenProvider(),
                 _ => throw new InvalidOperationException($"Unknown hardware token provider: {providerName}")
             };
 

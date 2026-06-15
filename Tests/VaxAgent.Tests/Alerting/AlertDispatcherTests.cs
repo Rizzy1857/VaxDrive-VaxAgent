@@ -6,6 +6,7 @@ using VaxDrive.VaxAgent.Alerting;
 
 namespace VaxDrive.VaxAgent.Tests.Alerting;
 
+[Collection("AgentEnv")]
 public class AlertDispatcherTests : IDisposable
 {
     private readonly string _testDir;
@@ -41,7 +42,7 @@ public class AlertDispatcherTests : IDisposable
         var dispatcher = new AlertDispatcher();
 
         // Act
-        await dispatcher.DispatchAlertAsync(1001, "TestAlert", 5, "msg=test").ConfigureAwait(false);
+        await dispatcher.DispatchAlertAsync(1001, "TestAlert", 5, "msg=test");
 
         // Assert
         string expectedFilename = $"alerts_{DateTime.UtcNow.ToString("yyyyMMdd")}.log";
@@ -49,7 +50,7 @@ public class AlertDispatcherTests : IDisposable
 
         Assert.True(File.Exists(expectedPath));
 
-        string content = await File.ReadAllTextAsync(expectedPath).ConfigureAwait(false);
+        string content = await File.ReadAllTextAsync(expectedPath);
         Assert.Contains("CEF:0|VaxDrive|VaxAgent", content);
         Assert.Contains("[HMAC:", content);
     }
@@ -81,9 +82,13 @@ public class AlertDispatcherTests : IDisposable
 
         // Assert
         var queueField = typeof(AlertDispatcher).GetField("_retryQueue", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var queue = queueField!.GetValue(dispatcher);
+        Assert.NotNull(queueField);
+        var queue = queueField.GetValue(dispatcher);
+        Assert.NotNull(queue);
         
-        int count = (int)queue!.GetType().GetProperty("Count")!.GetValue(queue)!;
+        var countProp = queue.GetType().GetProperty("Count");
+        Assert.NotNull(countProp);
+        int count = (int)countProp.GetValue(queue)!;
         Assert.Equal(1, count);
     }
 
@@ -95,7 +100,9 @@ public class AlertDispatcherTests : IDisposable
 
         if (Directory.Exists(_testDir))
         {
-            Directory.Delete(_testDir, true);
+            try { Directory.Delete(_testDir, true); }
+            catch (System.IO.IOException) { }
+            catch (System.UnauthorizedAccessException) { }
         }
     }
 }

@@ -12,6 +12,7 @@ using Microsoft.Data.Sqlite;
 
 namespace VaxDrive.VaxAgent.Tests.E2E;
 
+[Collection("AgentEnv")]
 public class SmokeTest : IDisposable
 {
     private readonly string _testDbPath;
@@ -19,7 +20,7 @@ public class SmokeTest : IDisposable
     public SmokeTest()
     {
         // Set environment variables required for initialization
-        Environment.SetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER", "KINGSTON");
+        Environment.SetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER", "MOCK");
         Environment.SetEnvironmentVariable("VAXDRIVE_DB_KEY", "smoke_test_key_32bytes_00");
         Environment.SetEnvironmentVariable("VAXDRIVE_BUILD_KEY", "smoke_test_build_key");
 
@@ -102,7 +103,7 @@ public class SmokeTest : IDisposable
     public async Task Test5_AgentCli_Version_ExitsCode0()
     {
         // Act
-        int result = await AgentCli.Main(new[] { "--version" }).ConfigureAwait(false);
+        int result = await AgentCli.Main(new[] { "--version" });
 
         // Assert
         Assert.Equal(0, result);
@@ -120,7 +121,8 @@ public class SmokeTest : IDisposable
             {
                 File.Delete(_testDbPath);
             }
-            catch { }
+            catch (System.IO.IOException) { }
+            catch (System.UnauthorizedAccessException) { }
         }
     }
 }

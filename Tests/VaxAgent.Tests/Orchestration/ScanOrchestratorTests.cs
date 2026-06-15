@@ -40,6 +40,7 @@ public class ScanOrchestratorTests
         // Let's use reflection to set _budget to 2 seconds.
         var orchestrator = new ScanOrchestrator(new ICheck[] { new BlockingCheck(), new FastCheck() });
         var budgetField = typeof(ScanOrchestrator).GetField("_budget", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.NotNull(budgetField);
         budgetField.SetValue(orchestrator, TimeSpan.FromSeconds(2));
 
         var context = new ScanContext();

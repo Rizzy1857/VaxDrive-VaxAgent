@@ -5,15 +5,29 @@ using VaxDrive.VaxAgent.Cli;
 
 namespace VaxDrive.VaxAgent.Tests.Cli;
 
-public class AgentCliTests
+[Collection("AgentEnv")]
+public class AgentCliTests : IDisposable
 {
+    private readonly string? _oldProvider;
+
+    public AgentCliTests()
+    {
+        _oldProvider = Environment.GetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER");
+        Environment.SetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER", "MOCK");
+    }
+
+    public void Dispose()
+    {
+        Environment.SetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER", _oldProvider);
+    }
+
     [Theory]
     [InlineData(new string[] { }, 2)]
     [InlineData(new string[] { "--unknown" }, 2)]
     public async Task Main_InvalidArgs_ReturnsExitCode2(string[] args, int expectedExitCode)
     {
         // Act
-        int result = await AgentCli.Main(args).ConfigureAwait(false);
+        int result = await AgentCli.Main(args);
 
         // Assert
         Assert.Equal(expectedExitCode, result);
@@ -22,21 +36,10 @@ public class AgentCliTests
     [Fact]
     public async Task Main_VersionArg_ReturnsExitCode0()
     {
-        // Arrange
-        // Environment variables needed to pass AgentBootstrap initialization
-        Environment.SetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER", "KINGSTON");
-        
-        try
-        {
-            // Act
-            int result = await AgentCli.Main(new string[] { "--version" }).ConfigureAwait(false);
+        // Act
+        int result = await AgentCli.Main(new string[] { "--version" });
 
-            // Assert
-            Assert.Equal(0, result);
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("VAXDRIVE_HARDWARE_TOKEN_PROVIDER", null);
-        }
+        // Assert
+        Assert.Equal(0, result);
     }
 }

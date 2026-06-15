@@ -58,7 +58,7 @@ public class SelfUpdateServiceTests : IDisposable
         
         using var cts = new CancellationTokenSource();
         var task = (Task)method!.Invoke(service, new object[] { cts.Token })!;
-        await task.ConfigureAwait(false);
+        await task;
 
         // Assert
         // The staging directory should NOT be created because it aborted early
@@ -108,7 +108,7 @@ public class SelfUpdateServiceTests : IDisposable
         var method = typeof(SelfUpdateService).GetMethod("CheckForUpdatesAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         using var cts = new CancellationTokenSource();
         var task = (Task)method!.Invoke(service, new object[] { cts.Token })!;
-        await task.ConfigureAwait(false);
+        await task;
 
         // Assert
         string currentDir = AppDomain.CurrentDomain.BaseDirectory;

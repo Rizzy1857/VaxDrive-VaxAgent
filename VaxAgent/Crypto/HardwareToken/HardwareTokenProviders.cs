@@ -215,3 +215,17 @@ public class IronKeyTokenProvider : BaseTokenProvider
         }
     }
 }
+
+public class MockTokenProvider : BaseTokenProvider
+{
+    protected override byte[] GetRawTokenFromDevice()
+    {
+        // Return 32 bytes for a mock HKDF input key
+        return new byte[32]; 
+    }
+
+    protected override string GetDeviceSerialFromDevice()
+    {
+        return "MOCK-SERIAL-001";
+    }
+}

@@ -9,7 +9,7 @@ public class ScheduledTasksCheckTests
     [Theory]
     [InlineData("TaskName,\"Task To Run\",\"Run As User\"", new[] { "TaskName", "Task To Run", "Run As User" })] // Normal row
     [InlineData("\"Task,Name\",\"Task To Run\",\"Run As User\"", new[] { "Task,Name", "Task To Run", "Run As User" })] // Quoted comma field
-    [InlineData("\"Task\"\"Name\"\",\"Task To Run\",\"Run As User\"", new[] { "Task\"Name\",Task To Run,Run As User" })] // This looks tricky in inline data due to escaping
+    [InlineData("\"Task\"\"Name\"\"\",\"Task To Run\",\"Run As User\"", new[] { "Task\"Name\"", "Task To Run", "Run As User" })] // This looks tricky in inline data due to escaping
     public void ParseCsvLine_HandlesQuotesCorrectly(string input, string[] expected)
     {
         string[]? actual = ScheduledTasksCheck.ParseCsvLine(input);

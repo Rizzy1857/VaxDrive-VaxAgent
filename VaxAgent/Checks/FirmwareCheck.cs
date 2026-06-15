@@ -7,8 +7,8 @@ namespace VaxDrive.VaxAgent.Checks;
 
 public sealed class FirmwareCheck : ICheck
 {
-    public string Name => "FirmwareCheck";
-    // Returns the static name of the check.
+    public string Name => "Firmware Check";
+    public string Description => "Validates BIOS/UEFI firmware versions against known baselines";
 
     public CheckResult Run(ScanContext context, CancellationToken ct)
     {

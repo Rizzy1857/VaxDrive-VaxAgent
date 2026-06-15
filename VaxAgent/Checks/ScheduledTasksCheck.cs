@@ -8,8 +8,8 @@ namespace VaxDrive.VaxAgent.Checks;
 
 public sealed class ScheduledTasksCheck : ICheck
 {
-    public string Name => "ScheduledTasksCheck";
-    // Returns the static name of the check.
+    public string Name => "Scheduled Tasks Check";
+    public string Description => "Enumerates scheduled tasks for persistence mechanisms";
 
     public CheckResult Run(ScanContext context, CancellationToken ct)
     {

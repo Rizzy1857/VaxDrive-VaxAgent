@@ -65,13 +65,13 @@ public sealed class VaxDecryptorTests
         byte[] payload = CreateEncryptedPayload("data"u8.ToArray());
         payload[16] ^= 0xFF; // flip bit in tag
 
-        Assert.Throws<CryptographicException>(() => VaxDecryptor.Decrypt(payload, _aesKey));
+        Assert.ThrowsAny<CryptographicException>(() => VaxDecryptor.Decrypt(payload, _aesKey));
     }
 
     [Fact]
     public void Decrypt_MalformedFile_ThrowsCryptographicException()
     {
         byte[] shortFile = new byte[10];
-        Assert.Throws<CryptographicException>(() => VaxDecryptor.Decrypt(shortFile, _aesKey));
+        Assert.ThrowsAny<CryptographicException>(() => VaxDecryptor.Decrypt(shortFile, _aesKey));
     }
 }

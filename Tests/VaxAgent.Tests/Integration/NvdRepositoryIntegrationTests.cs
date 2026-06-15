@@ -132,7 +132,8 @@ public class NvdRepositoryIntegrationTests : IDisposable
             {
                 System.IO.File.Delete(_dbPath);
             }
-            catch { }
+            catch (System.IO.IOException) { }
+            catch (System.ObjectDisposedException) { }
         }
     }
 }

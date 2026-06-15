@@ -1,9 +1,13 @@
 namespace VaxDrive.VaxAgent.Checks;
 
+using System;
+using System.Collections.Generic;
+
 public sealed class CheckResult
 {
     public bool Success { get; init; }
     public string? Error { get; init; }
+    public bool IsSuccess => Success;
 
     public static CheckResult Ok()
     {

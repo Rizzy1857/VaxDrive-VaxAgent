@@ -29,7 +29,7 @@ public sealed class ScannerParserTests
         
         Assert.NotNull(result);
         Assert.Contains("Siemens S7-1500", result);
-        Assert.DoesNotContain("\x01", result); // Non-printable should be sanitized
+        Assert.DoesNotContain('\x01', result); // Non-printable should be sanitized
     }
 
     [Fact]
@@ -55,6 +55,6 @@ public sealed class ScannerParserTests
         
         Assert.NotNull(result);
         Assert.Contains("Schneider M241", result);
-        Assert.DoesNotContain("\x02", result); // Non-printable should be sanitized
+        Assert.DoesNotContain('\x02', result); // Non-printable should be sanitized
     }
 }

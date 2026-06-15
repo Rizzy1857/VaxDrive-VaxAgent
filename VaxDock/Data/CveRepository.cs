@@ -45,8 +45,7 @@ public class CveRepository
         if (!string.IsNullOrEmpty(_dbKey))
         {
             using var cmdKey = conn.CreateCommand();
-            cmdKey.CommandText = "PRAGMA key = @key;";
-            cmdKey.Parameters.AddWithValue("@key", _dbKey);
+            cmdKey.CommandText = $"PRAGMA key = '{_dbKey.Replace("'", "''")}';";
             cmdKey.ExecuteNonQuery();
         }
 

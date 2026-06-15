@@ -13,7 +13,7 @@ public class CveMatchCheckTests
     [InlineData("1.2.3", null, "2.0.0", true)]
     [InlineData("bad", "1.0.0", "2.0.0", false)]
     [InlineData("1.5.0-beta", "1.0.0", "2.0.0", true)] // Tests pre-release suffix ignore
-    public void TryParseSemVer_BoundsCheck_WorksCorrectly(string version, string minBound, string maxBound, bool expectedMatch)
+    public void TryParseSemVer_BoundsCheck_WorksCorrectly(string version, string? minBound, string? maxBound, bool expectedMatch)
     {
         if (!CveMatchCheck.TryParseSemVer(version, out Version parsedVersion))
         {

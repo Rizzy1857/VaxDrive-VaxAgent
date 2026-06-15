@@ -7,6 +7,7 @@ using VaxDrive.VaxDock.Services;
 
 namespace VaxDrive.VaxDock.Tests.Services;
 
+[Collection("Database")]
 public sealed class QuarantineServiceTests : IDisposable
 {
     private readonly string _dbPath;
@@ -33,7 +34,10 @@ public sealed class QuarantineServiceTests : IDisposable
 
     public void Dispose()
     {
-        DatabaseBootstrap.GetConnection().Dispose();
+        var conn = DatabaseBootstrap.GetConnection();
+        conn.Close();
+        conn.Dispose();
+        SqliteConnection.ClearAllPools();
         if (File.Exists(_dbPath)) File.Delete(_dbPath);
     }
 }

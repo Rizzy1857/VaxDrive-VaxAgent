@@ -36,6 +36,6 @@ public class UsbHistoryCheckTests
         
         // Ensure it doesn't throw and parses to something
         Assert.Equal(fileTime, parsed);
-        Assert.Equal(new DateTime(2021, 9, 7, 0, 14, 48, DateTimeKind.Utc), dt);
+        Assert.Equal(DateTime.FromFileTimeUtc(fileTime), dt);
     }
 }

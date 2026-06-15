@@ -8,8 +8,8 @@ namespace VaxDrive.VaxAgent.Checks;
 
 public sealed class OpenPortsCheck : ICheck
 {
-    public string Name => "OpenPortsCheck";
-    // Returns the static name of the check.
+    public string Name => "Open Ports Check";
+    public string Description => "Enumerates active listening ports and connections";
 
     public CheckResult Run(ScanContext context, CancellationToken ct)
     {

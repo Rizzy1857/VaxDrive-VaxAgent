@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using VaxDrive.VaxAgent.Network;
 using VaxDrive.VaxAgent.Network.Protocols;
 using VaxDrive.VaxAgent.Checks.Yara;
 using VaxDrive.VaxDock.Services.Nvd;
@@ -71,7 +72,11 @@ public class ParserFuzzTests
                 if (frame == null || frame.Length < 4) return null;
                 return null;
             }
-            catch
+            catch (FormatException)
+            {
+                return null;
+            }
+            catch (InvalidOperationException)
             {
                 return null;
             }
@@ -113,13 +118,13 @@ public class ParserFuzzTests
     [InlineData(double.NaN, 5.0)]
     [InlineData(5.0, double.PositiveInfinity)]
     [InlineData(double.NegativeInfinity, double.PositiveInfinity)]
-    public void SeverityDeltaComputer_Fuzzing_HandlesExtremeDoubles(double oldScore, double newScore)
+    public async System.Threading.Tasks.Task SeverityDeltaComputer_Fuzzing_HandlesExtremeDoubles(double oldScore, double newScore)
     {
         var computer = new SeverityDeltaComputer();
         
         // Assert that it doesn't crash. (Math.Abs handles NaN and Infinity by returning NaN or Infinity)
         // Depending on business logic, we just want to ensure no unhandled exceptions bubble up.
-        var exception = Record.Exception(() => computer.IsAnomalousShift(oldScore, newScore));
+        var exception = await Record.ExceptionAsync(() => System.Threading.Tasks.Task.Run(() => computer.IsAnomalousShift(oldScore, newScore)));
         Assert.Null(exception);
     }
 }

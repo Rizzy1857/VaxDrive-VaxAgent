@@ -36,7 +36,7 @@ public class ReportExporterTests : IDisposable
         var deltas = new List<DeltaRecord>();
 
         // Act
-        await exporter.ExportReportAsync(topology, yaraHits, deltas).ConfigureAwait(false);
+        await exporter.ExportReportAsync(topology, yaraHits, deltas);
 
         // Assert
         var files = Directory.GetFiles(_testDir);
@@ -50,8 +50,8 @@ public class ReportExporterTests : IDisposable
         string sigPath = htmlPath + ".sig";
         Assert.True(File.Exists(sigPath));
 
-        string htmlContent = await File.ReadAllTextAsync(htmlPath).ConfigureAwait(false);
-        string expectedSig = await File.ReadAllTextAsync(sigPath).ConfigureAwait(false);
+        string htmlContent = await File.ReadAllTextAsync(htmlPath);
+        string expectedSig = await File.ReadAllTextAsync(sigPath);
 
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes("test_hmac_key_123"));
         string computedSig = Convert.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(htmlContent))).ToLowerInvariant();

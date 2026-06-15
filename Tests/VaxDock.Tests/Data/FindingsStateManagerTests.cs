@@ -65,7 +65,10 @@ public sealed class FindingsStateManagerTests : IDisposable
 
     public void Dispose()
     {
-        DatabaseBootstrap.GetConnection().Dispose();
+        var conn = DatabaseBootstrap.GetConnection();
+        conn.Close();
+        conn.Dispose();
+        SqliteConnection.ClearAllPools();
         if (File.Exists(_dbPath)) File.Delete(_dbPath);
     }
 }

@@ -21,8 +21,8 @@ if (Test-Path $DeployDir) { Remove-Item -Recurse -Force $DeployDir }
 New-Item -ItemType Directory -Force -Path $DeployDir | Out-Null
 New-Item -ItemType Directory -Force -Path "$DeployDir\logs" | Out-Null
 
-Write-Host "[2] Building VaxAgent (net8.0, Single File)..."
-dotnet publish "$RepoRoot\VaxAgent\VaxAgent.csproj" -f net8.0 -c Release -r win-x64 --self-contained -o "$DeployDir\Agent_Net8"
+Write-Host "[2] Building VaxAgent (net8.0-windows, Single File)..."
+dotnet publish "$RepoRoot\VaxAgent\VaxAgent.csproj" -f net8.0-windows -c Release -r win-x64 --self-contained -o "$DeployDir\Agent_Net8"
 
 Write-Host "[3] Building VaxDock (net8.0-windows)..."
 dotnet publish "$RepoRoot\VaxDock\VaxDock.csproj" -c Release -o "$DeployDir\VaxDock"

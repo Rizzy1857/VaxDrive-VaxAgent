@@ -7,6 +7,7 @@ using VaxDrive.VaxAgent.Diagnostics;
 
 namespace VaxDrive.VaxAgent.Tests.Diagnostics;
 
+[Collection("AgentEnv")]
 public class CrashLoggerTests : IDisposable
 {
     private string _tempKey;
@@ -25,11 +26,15 @@ public class CrashLoggerTests : IDisposable
         var dir = AppDomain.CurrentDomain.BaseDirectory;
         foreach (var file in Directory.GetFiles(dir, "crash_*.log"))
         {
-            try { File.Delete(file); } catch { }
+            try { File.Delete(file); }
+            catch (System.IO.IOException) { }
+            catch (System.ObjectDisposedException) { }
         }
         foreach (var file in Directory.GetFiles(dir, "UNSIGNED_crash_*.log"))
         {
-            try { File.Delete(file); } catch { }
+            try { File.Delete(file); }
+            catch (System.IO.IOException) { }
+            catch (System.ObjectDisposedException) { }
         }
     }
 
@@ -41,7 +46,7 @@ public class CrashLoggerTests : IDisposable
         {
             throw new InvalidOperationException("Test crash from unit test");
         }
-        catch (Exception e)
+        catch (InvalidOperationException e)
         {
             ex = e;
         }

@@ -27,7 +27,7 @@ public class ProgramTests
         
         // If we want to simulate the exception, we can't easily do it without changing the environment.
         // But we can assert that calling it normally doesn't throw (since we are not in System32).
-        string path = (string)method.Invoke(null, new object[] { new string[0] });
+        string? path = (string?)method.Invoke(null, new object[] { new string[0] });
         Assert.NotNull(path);
         Assert.False(path.IndexOf("System32", StringComparison.OrdinalIgnoreCase) >= 0);
     }
