@@ -22,6 +22,7 @@
 | **1.3.0** | Cadence, Trends, Export | 7 | | ✅ Complete |
 | **1.4.0** | OLED + UX Polish | 7 | | ✅ Complete |
 | **2.0.0** | Production Hardened Release | all | Full hardware, pen-tested | ✅ Complete |
+| **3.0.0** | Enterprise Edition | 9 | Advanced Threat & Intel | 🚧 Planned |
 
 ---
 
@@ -883,6 +884,37 @@ jobs:
 | **HID spoof** | Drive presents as USB HID keyboard to type launch command automatically |
 | **IOC** | Indicator of Compromise — known-bad process name or artifact |
 | **OPEN-N** | Decision items requiring investigation before that feature can ship |
+
+---
+
+## Phase 9 — Enterprise Edition (v3.0.0)
+
+> **Risk:** Hardware dependency (IronKey SDK). Performance overhead of memory scanning (YARA).
+> **Dependency:** 2.0.0 deployment feedback.
+
+### Goal
+
+Transform VaxDrive from a foundational OT scanner into an enterprise-grade threat hunting platform with hardware-backed security, deep protocol discovery, and advanced intelligence.
+
+### 1. Hardware Token Integration (Resolve OPEN-1)
+- Replace the deterministic `/boot/device.token` stub.
+- Integrate Kingston / IronKey APIs or equivalent PKCS#11 hardware security modules.
+- Ensure cryptographic keys are derived natively from the USB drive's secure microcontroller, guaranteeing they never leave the drive.
+
+### 2. Expanded Protocol Parsing (Deep Discovery)
+- Build upon the passive ARP and Modbus/S7 banner grab.
+- Add robust discovery parsers for **DNP3**, **EtherNet/IP (CIP)**, and **BACnet**.
+- Create a unified `ProtocolAsset` model to map the entire factory floor network topology.
+
+### 3. YARA Rule Integration
+- Integrate a lightweight YARA engine (`libyara.NET`) into `VaxAgent.exe`.
+- Distribute OT-specific YARA signatures via the Definitions Pack.
+- Scan target memory space and critical file paths for advanced malware variants (e.g., Industroyer, Triton, BlackEnergy).
+
+### 4. NVD Pagination Engine
+- Expand the `NvdSyncService` in VaxDock to support a resilient background crawler.
+- Implement API pagination to download and cache the entire NVD database incrementally.
+- Automatically compute severity deltas and flag new zero-days against previously ingested device inventories.
 
 ---
 

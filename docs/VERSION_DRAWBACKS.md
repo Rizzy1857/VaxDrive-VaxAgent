@@ -8,7 +8,6 @@ As these drawbacks are mitigated or resolved in future releases, they must be re
 ### Target Version: v0.1.0 (Phase 1-3)
 
 - **.NET 3.5 Fallback Cryptography:** The `.NET 3.5` build of `VaxAgent` (required for Windows XP targets) lacks `AesGcm` in its base class library. It must rely on a fallback encryption scheme (e.g., AES-CBC with manual HMAC) which complicates the VaxDock decryption logic.
-- **Hardware Key Derivation Stub:** Production SDKs (IronKey/Kingston) for hardware-bound key derivation are not yet integrated. The system currently relies on a `device.token` fallback file stored in the `/boot` partition.
 - **SharpPcap on Locked HMIs:** `PlcNeighborCheck` relies on SharpPcap for passive ARP sweeping. This requires Npcap/WinPcap installed on the target host. Locked HMIs without these drivers will fail the check unless the raw socket fallback is fully robust.
 - **Orchestrator Synchronous Blocking:** The `ScanOrchestrator` uses a synchronous loop to maintain `.NET 3.5` compatibility. If a check module becomes infinitely blocked within a native OS call, the 90-second budget enforcement cannot preemptively kill it.
 - **WMI Missing Strings:** Virtualized environments (like Parallels or VMware) may omit `Manufacturer` or `SMBIOSBIOSVersion` strings in `Win32_BIOS`. The `FirmwareCheck` currently gracefully degrades to "Unknown", which could reduce fingerprint accuracy on VMs.
@@ -21,3 +20,9 @@ As these drawbacks are mitigated or resolved in future releases, they must be re
 - **.NET 3.5 Crypto Fallbacks (Critical):** `AesGcm` and `HKDF` are not available in `.NET 3.5`. Currently, `VaxEncryptor` and `KeyDerivation` use non-functional stubs for the legacy target, meaning Windows XP scans are currently written in plaintext without HMAC signatures until a manual AES-CBC/HMAC-SHA256 fallback is implemented.
 - **Silent Crash Logging:** `Program.cs` catches global exceptions and prints them to `Console`. If the agent is run silently via an automated script without a console window attached, critical startup crashes will leave no trace.
 - **Drive Path Resolution:** If `Program.cs` is executed without arguments from a strange context (like a `Win+R` shortcut), `AppDomain.CurrentDomain.BaseDirectory` might resolve incorrectly to `C:\Windows\System32`, causing the agent to fail to find `/boot/definitions.json`.
+
+### Target Version: v3.2.0 (Phase 9-11)
+
+- **Atomic Directory Renames:** `SelfUpdateService` uses generic file copying and cannot easily achieve atomic directory renames on Windows if files are locked by the OS.
+- **Process Memory Chunk Limits:** `ProcessMemoryReader` is restricted to 4MB chunks, which might cause YARA signatures matching across boundary edges to be missed.
+- **Silent Alert Loss:** `AlertDispatcher` silently drops messages if UDP syslog is unreachable, guaranteeing no agent crashes but risking alert loss during network disruptions.

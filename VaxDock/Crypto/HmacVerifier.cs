@@ -50,6 +50,14 @@ public static class HmacVerifier
             throw new HmacVerificationException("HMAC mismatch — file tampered or corrupt");
         }
     }
+
+    public static string CalculateSignature(string payload, string keyBase64)
+    {
+        byte[] key = Convert.FromBase64String(keyBase64);
+        byte[] payloadBytes = System.Text.Encoding.UTF8.GetBytes(payload);
+        byte[] hash = HMACSHA256.HashData(key, payloadBytes);
+        return Convert.ToBase64String(hash);
+    }
 }
 
 public sealed class HmacVerificationException : Exception
