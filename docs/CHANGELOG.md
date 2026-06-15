@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2026-06-15
+### Added
+- Enterprise-grade hardware token derivation supporting Kingston and IronKey [Phase 9]
+- Robust NVD pagination engine for offline CVE mapping [Phase 9]
+- Deep discovery network parsers for DNP3, CIP, and BACnet [Phase 9]
+- Fully operational Operator Console TUI for live daemon monitoring [Phase 11]
+
+### Security
+- Integrated `libyara.NET` memory scanning for advanced persistent OT threats [Phase 9]
+- Air-gap enforced AlertDispatcher emitting CEF to Syslog, EventLog, and HMAC flat files [Phase 11]
+- Enforced zeroization of hardware token material upon USB ejection [Phase 9]
+- Enforced HMAC-SHA256 verification on all update payloads and artifacts [Phase 10]
+
+### Breaking Changes
+- Replaced the plaintext `device.token` fallback system; hardware tokens are now mandatory [Phase 9]
+- Dropped generic console output in favor of the Operator Console TUI [Phase 11]
+
+### Known Limitations
+- YARA engine currently restricted to Windows x64 only [Phase 9]
+- BACnet MS/TP (serial) not supported; IP-only [Phase 9]
+- No cloud/internet update path by design [Phase 10]
+- PDF reports not supported, HTML only [Phase 11]
+
 ## [3.2.0] - Phase 11 (Reporting & Operator Console)
 ### Added
 - **ReportExporter**: Generates fully offline, HMAC-signed HTML and JSON topology & vulnerability reports.

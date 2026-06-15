@@ -1,0 +1,14 @@
+root = true
+
+[*.cs]
+# Enable specific security and quality analyzers as errors
+dotnet_diagnostic.CA2100.severity = error # Review SQL queries for security vulnerabilities
+dotnet_diagnostic.CA5350.severity = error # Do Not Use Weak Cryptographic Algorithms
+dotnet_diagnostic.CA5359.severity = error # Do Not Disable Certificate Validation
+dotnet_diagnostic.CA1031.severity = error # Do not catch general exception types
+dotnet_diagnostic.CA2213.severity = error # Disposable fields should be disposed
+dotnet_diagnostic.CA5397.severity = error # Do not use deprecated SslProtocols values
+
+# Suppress specific analyzers project-wide
+dotnet_diagnostic.CA1014.severity = none # Mark assemblies with CLSCompliantAttribute
+dotnet_diagnostic.CA1062.severity = none # Validate arguments of public methods
