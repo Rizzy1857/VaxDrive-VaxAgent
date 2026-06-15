@@ -49,6 +49,39 @@ if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
     Start-Sleep -Seconds 2
 }
 
+# Perform Atomic Swap if staging is ready
+$flagPath = "$drivePath\staged_ready.flag"
+$backupDir = $null
+if (Test-Path $flagPath) {
+    $utcNow = (Get-Date).ToUniversalTime().ToString("yyyyMMdd_HHmmss")
+    $agentDir = "$drivePath\VaxAgent"
+    $backupDir = "$drivePath\VaxAgent_backup_$utcNow"
+    $stagingDir = "$drivePath\updates_staging"
+
+    if (Test-Path $stagingDir) {
+        for ($i=0; $i -lt 3; $i++) {
+            try {
+                if (Test-Path $agentDir) {
+                    Rename-Item -Path $agentDir -NewName "VaxAgent_backup_$utcNow" -ErrorAction Stop
+                }
+                Rename-Item -Path $stagingDir -NewName "VaxAgent" -ErrorAction Stop
+                break
+            } catch {
+                if ($i -eq 2) {
+                    # Abort and Restore
+                    if (Test-Path $backupDir) {
+                        Rename-Item -Path $backupDir -NewName "VaxAgent" -ErrorAction SilentlyContinue
+                    }
+                    Write-Host "ABORT: Failed to perform atomic swap due to locked files." -ForegroundColor Red
+                    exit 1
+                }
+                Start-Sleep -Milliseconds 500
+            }
+        }
+    }
+    Remove-Item -Path $flagPath -Force -ErrorAction SilentlyContinue
+}
+
 # Create service using sc.exe to specify exact account (NT SERVICE\VaxDriveAgent is a virtual account)
 # Virtual accounts are implicitly created by the SCM when the service is created.
 $scResult = sc.exe create $serviceName binPath= "`"$drivePath\VaxAgent.exe`" --daemon" start= auto obj= "NT SERVICE\$serviceName"
@@ -77,6 +110,10 @@ for ($i = 0; $i -lt 10; $i++) {
 if (!$running) {
     Write-Host "ABORT: Service failed to enter Running state within 10s." -ForegroundColor Red
     exit 1
+}
+
+if ($null -ne $backupDir -and (Test-Path $backupDir)) {
+    Remove-Item -Path $backupDir -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 # 6. Write install log

@@ -919,3 +919,20 @@ Transform VaxDrive from a foundational OT scanner into an enterprise-grade threa
 ---
 
 *Roadmap maintained by the VaxDrive engineering team. Phase exit criteria are gates — do not advance to next phase without meeting all criteria.*
+
+---
+
+## Technical Debt Sprints (v3.4.0+)
+
+### Sprint A
+- [x] Fix: AES-CBC/HMAC-SHA256 fallback for .NET 3.5
+- [x] Fix: Silent Crash Logging
+- [x] Fix: LegacyDefinitionLoader hand-rolled JSON parser
+- [x] Fix: Atomic Directory Renames via SelfUpdateService
+- [x] Fix: UDP Alert retry queue
+
+### Sprint B
+- [ ] Fix 3: Orchestrator watchdog thread
+- [ ] Fix 10: SemVer range parser CveMatchCheck
+- [ ] Fix 15: YARA overlap buffer
+- [ ] Fix 13: Drive path resolution

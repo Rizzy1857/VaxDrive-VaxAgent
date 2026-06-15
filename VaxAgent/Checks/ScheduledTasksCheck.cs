@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Threading;
 using System.IO;
 using VaxDrive.Models;
 
@@ -10,7 +11,7 @@ public sealed class ScheduledTasksCheck : ICheck
     public string Name => "ScheduledTasksCheck";
     // Returns the static name of the check.
 
-    public CheckResult Run(ScanContext context)
+    public CheckResult Run(ScanContext context, CancellationToken ct)
     {
         try
         {
@@ -39,7 +40,9 @@ public sealed class ScheduledTasksCheck : ICheck
             string? headerLine = stringReader.ReadLine();
             if (string.IsNullOrEmpty(headerLine)) return CheckResult.Failed("No output from schtasks.");
 
-            string[] headers = ParseCsvLine(headerLine);
+            string[]? headers = ParseCsvLine(headerLine);
+            if (headers == null) return CheckResult.Failed("Could not parse schtasks CSV header (Malformed).");
+
             int taskNameIdx = Array.IndexOf(headers, "TaskName");
             int taskToRunIdx = Array.IndexOf(headers, "Task To Run");
             int runAsUserIdx = Array.IndexOf(headers, "Run As User");
@@ -51,7 +54,8 @@ public sealed class ScheduledTasksCheck : ICheck
             {
                 if (string.IsNullOrEmpty(line)) continue;
                 
-                string[] parts = ParseCsvLine(line);
+                string[]? parts = ParseCsvLine(line);
+                if (parts == null) continue;
                 
                 string taskName = taskNameIdx >= 0 && taskNameIdx < parts.Length ? parts[taskNameIdx] : string.Empty;
                 string command = taskToRunIdx >= 0 && taskToRunIdx < parts.Length ? parts[taskToRunIdx] : string.Empty;
@@ -78,32 +82,62 @@ public sealed class ScheduledTasksCheck : ICheck
     // Executes schtasks.exe and parses its CSV output dynamically to gather scheduled task definitions.
     // Returns CheckResult.Ok on success, appending to context.ScheduledTasks.
 
-    private string[] ParseCsvLine(string line)
+    internal static string[]? ParseCsvLine(string line)
     {
         var result = new System.Collections.Generic.List<string>();
         bool inQuotes = false;
-        string current = "";
+        var current = new System.Text.StringBuilder();
         
         for (int i = 0; i < line.Length; i++)
         {
             char c = line[i];
-            if (c == '\"')
+            
+            if (inQuotes)
             {
-                inQuotes = !inQuotes;
-            }
-            else if (c == ',' && !inQuotes)
-            {
-                result.Add(current);
-                current = "";
+                if (c == '"')
+                {
+                    if (i + 1 < line.Length && line[i + 1] == '"')
+                    {
+                        current.Append('"');
+                        i++;
+                    }
+                    else
+                    {
+                        inQuotes = false;
+                    }
+                }
+                else
+                {
+                    current.Append(c);
+                }
             }
             else
             {
-                current += c;
+                if (c == '"')
+                {
+                    inQuotes = true;
+                }
+                else if (c == ',')
+                {
+                    result.Add(current.ToString());
+                    current.Length = 0;
+                }
+                else
+                {
+                    current.Append(c);
+                }
             }
         }
-        result.Add(current);
+        
+        if (inQuotes)
+        {
+            Console.WriteLine($"[HMAC_AUDIT] {DateTime.UtcNow:O} | ScheduledTasksCheck | Warning: Malformed CSV row, unclosed quote. Skipping row.");
+            return null;
+        }
+        
+        result.Add(current.ToString());
         return result.ToArray();
     }
-    // Parses a single line of CSV text considering quote encapsulation.
-    // Returns an array of string fields extracted from the CSV line.
+    // Parses a single line of CSV text considering RFC 4180 rules.
+    // Returns an array of string fields, or null if malformed.
 }

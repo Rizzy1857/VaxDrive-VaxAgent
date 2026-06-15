@@ -21,6 +21,9 @@ public sealed class ScanResult
     [JsonPropertyName("os")]
     public string Os { get; set; } = string.Empty;
 
+    [JsonPropertyName("firmware")]
+    public FirmwareRecord Firmware { get; set; } = new FirmwareRecord();
+
     [JsonPropertyName("patch_level")]
     public string? PatchLevel { get; set; }
 

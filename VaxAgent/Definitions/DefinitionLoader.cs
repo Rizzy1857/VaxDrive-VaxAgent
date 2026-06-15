@@ -24,9 +24,18 @@ public sealed class DefinitionLoader
         {
             return null; // Silent fail if corrupt, CveMatchCheck handles null pack gracefully
         }
+#elif NET35
+        if (!File.Exists(definitionsPath)) return null;
+        try
+        {
+            string json = File.ReadAllText(definitionsPath);
+            return VaxDrive.VaxAgent.Loaders.LegacyDefinitionLoader.Parse(json);
+        }
+        catch
+        {
+            return null;
+        }
 #else
-        // TODO: .NET 3.5 has no System.Text.Json. We either need a micro-parser or DataContractJsonSerializer.
-        // For now, return a blank pack so the legacy build compiles and runs without crashing.
         return new DefinitionPack();
 #endif
     }

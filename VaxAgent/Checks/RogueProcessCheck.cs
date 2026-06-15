@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Management;
+using System.Threading;
 using VaxDrive.Models;
 
 namespace VaxDrive.VaxAgent.Checks;
@@ -19,7 +20,7 @@ public sealed class RogueProcessCheck : ICheck
     // Initializes the check with the loaded definition pack.
     // Returns a new RogueProcessCheck instance.
 
-    public CheckResult Run(ScanContext context)
+    public CheckResult Run(ScanContext context, CancellationToken ct)
     {
         if (_pack == null || _pack.ProcessIocs.Count == 0)
         {

@@ -124,21 +124,21 @@ public class SelfUpdateService
             }
         }
 
-        // All hashes verified. Atomic replace via temp + rename.
+        // All hashes verified. Stage to updates_staging\
         string currentDir = AppDomain.CurrentDomain.BaseDirectory;
-        string tempUpdateDir = Path.Combine(currentDir, ".update_temp");
+        string stagingDir = Path.Combine(Directory.GetParent(currentDir)?.FullName ?? currentDir, "updates_staging");
         
-        if (Directory.Exists(tempUpdateDir))
+        if (Directory.Exists(stagingDir))
         {
-            Directory.Delete(tempUpdateDir, true);
+            Directory.Delete(stagingDir, true);
         }
-        Directory.CreateDirectory(tempUpdateDir);
+        Directory.CreateDirectory(stagingDir);
 
         foreach (var fileElement in filesArray.EnumerateArray())
         {
             string filename = fileElement.GetProperty("filename").GetString() ?? "";
             string sourcePath = Path.Combine(_updatePath, filename);
-            string tempDestPath = Path.Combine(tempUpdateDir, filename);
+            string tempDestPath = Path.Combine(stagingDir, filename);
             
             string? dir = Path.GetDirectoryName(tempDestPath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -146,12 +146,29 @@ public class SelfUpdateService
                 Directory.CreateDirectory(dir);
             }
             
-            File.Copy(sourcePath, tempDestPath, true);
+            // Retry logic for locked files during copy (just in case)
+            for (int i = 0; i < 3; i++)
+            {
+                try
+                {
+                    File.Copy(sourcePath, tempDestPath, true);
+                    break;
+                }
+                catch (IOException)
+                {
+                    if (i == 2)
+                    {
+                        Directory.Delete(stagingDir, true);
+                        LogAudit("UpdateFailed", "File copy failed due to locks after 3 retries. Aborting.");
+                        return;
+                    }
+                    await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                }
+            }
         }
 
-        // Normally we'd do a transactional rename here. Windows doesn't easily support 
-        // atomic directory renames if files are locked, so we just log the ready state.
-        
+        // Write the flag for InstallService.ps1
+        File.WriteAllText(Path.Combine(Directory.GetParent(currentDir)?.FullName ?? currentDir, "staged_ready.flag"), "READY");
         LogAudit("UpdateReady", "UPDATE READY - restart required");
     }
 

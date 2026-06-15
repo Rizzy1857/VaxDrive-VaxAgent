@@ -50,9 +50,11 @@ public static class VaxEncryptor
         ms.Write(hmac);
         
         return ms.ToArray();
+#elif NET35
+        // NET35 fallback using AES-CBC. 
+        // We use the encKey as the master password seed for the PBKDF2 derivation inside LegacyEncryptor.
+        return LegacyEncryptor.Encrypt(plaintext, encKey);
 #else
-        // TODO: NET35 fallback using AES-CBC. 
-        // For now, return unencrypted bytes so it compiles. Real fallback is a known drawback.
         return plaintext;
 #endif
     }

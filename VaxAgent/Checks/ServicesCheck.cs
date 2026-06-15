@@ -1,5 +1,6 @@
 using System;
 using System.Management;
+using System.Threading;
 using VaxDrive.Models;
 
 namespace VaxDrive.VaxAgent.Checks;
@@ -9,7 +10,7 @@ public sealed class ServicesCheck : ICheck
     public string Name => "ServicesCheck";
     // Returns the static name of the check.
 
-    public CheckResult Run(ScanContext context)
+    public CheckResult Run(ScanContext context, CancellationToken ct)
     {
         try
         {

@@ -104,7 +104,7 @@ public class ProcessMemoryReader : IDisposable
     /// <summary>
     /// Reads a chunk of memory from the target process. Caps reads at 4MB to prevent memory exhaustion.
     /// </summary>
-    public byte[] ReadMemoryChunk(IntPtr baseAddress, int size)
+    public virtual byte[] ReadMemoryChunk(IntPtr baseAddress, int size)
     {
         if (size > 4 * 1024 * 1024)
         {
@@ -135,6 +135,59 @@ public class ProcessMemoryReader : IDisposable
         }
 
         return buffer;
+    }
+
+    /// <summary>
+    /// Enumerates memory in chunks, prepending the end of the previous chunk to the next to catch boundary-spanning YARA signatures.
+    /// </summary>
+    public IEnumerable<byte[]> ReadChunksWithOverlap(IntPtr baseAddress, long totalSize)
+    {
+        int overlapBytes = 4096;
+        string envOverlap = Environment.GetEnvironmentVariable("VAXDRIVE_YARA_OVERLAP_BYTES");
+        if (!string.IsNullOrEmpty(envOverlap) && int.TryParse(envOverlap, out int parsed))
+        {
+            overlapBytes = parsed;
+        }
+        if (overlapBytes > 65536) overlapBytes = 65536;
+        if (overlapBytes < 0) overlapBytes = 0;
+
+        int chunkSize = 4 * 1024 * 1024; // 4MB
+        long offset = 0;
+        byte[] previousTail = null;
+
+        while (offset < totalSize)
+        {
+            int toRead = (int)Math.Min(chunkSize, totalSize - offset);
+            byte[] chunk = ReadMemoryChunk(new IntPtr(baseAddress.ToInt64() + offset), toRead);
+
+            if (chunk == null || chunk.Length == 0)
+            {
+                break;
+            }
+
+            byte[] combined;
+            if (previousTail != null && previousTail.Length > 0)
+            {
+                combined = new byte[previousTail.Length + chunk.Length];
+                Buffer.BlockCopy(previousTail, 0, combined, 0, previousTail.Length);
+                Buffer.BlockCopy(chunk, 0, combined, previousTail.Length, chunk.Length);
+            }
+            else
+            {
+                combined = chunk;
+            }
+
+            int tailSize = Math.Min(overlapBytes, chunk.Length);
+            if (tailSize > 0)
+            {
+                previousTail = new byte[tailSize];
+                Buffer.BlockCopy(chunk, chunk.Length - tailSize, previousTail, 0, tailSize);
+            }
+
+            yield return combined;
+
+            offset += toRead;
+        }
     }
 
     public void Dispose()

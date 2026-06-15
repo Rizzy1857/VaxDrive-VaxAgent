@@ -69,6 +69,24 @@ public class AlertDispatcherTests : IDisposable
         Assert.Null(exception);
     }
 
+    [Fact]
+    public async Task SendToSyslogAsync_Failure_QueuesMessage()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("VAXDRIVE_SYSLOG_HOST", "invalid.local.domain.internal.fail");
+        using var dispatcher = new AlertDispatcher();
+
+        // Act
+        await dispatcher.SendToSyslogAsync("test payload", false);
+
+        // Assert
+        var queueField = typeof(AlertDispatcher).GetField("_retryQueue", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var queue = queueField!.GetValue(dispatcher);
+        
+        int count = (int)queue!.GetType().GetProperty("Count")!.GetValue(queue)!;
+        Assert.Equal(1, count);
+    }
+
     public void Dispose()
     {
         Environment.SetEnvironmentVariable("VAXDRIVE_ALERT_LOG_PATH", null);

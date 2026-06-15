@@ -1,22 +1,33 @@
 using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace VaxDrive.VaxAgent.Alerting;
 
-public class AlertDispatcher
+public class AlertDispatcher : IDisposable
 {
     private readonly string _syslogHost;
     private readonly int _syslogPort;
     private readonly string _flatFilePath;
     private readonly string _buildKey;
     private readonly string _version;
+
+    private readonly ConcurrentQueue<FailedAlert> _retryQueue;
+    private readonly CancellationTokenSource _cts;
+    private readonly Task _retryTask;
+
+    private class FailedAlert
+    {
+        public string Payload { get; set; } = "";
+        public int Attempts { get; set; } = 0;
+    }
 
     public AlertDispatcher()
     {
@@ -28,6 +39,17 @@ public class AlertDispatcher
         _buildKey = Environment.GetEnvironmentVariable("VAXDRIVE_BUILD_KEY") ?? string.Empty;
 
         _version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0";
+
+        _retryQueue = new ConcurrentQueue<FailedAlert>();
+        _cts = new CancellationTokenSource();
+        _retryTask = Task.Run(() => RetryLoopAsync(_cts.Token));
+    }
+
+    public void Dispose()
+    {
+        _cts.Cancel();
+        try { _retryTask.Wait(1000); } catch { }
+        _cts.Dispose();
     }
 
     public async Task DispatchAlertAsync(int eventId, string name, int severity, string extensions)
@@ -35,9 +57,9 @@ public class AlertDispatcher
         string cefPayload = FormatCef(eventId, name, severity, extensions);
 
         await Task.WhenAll(
-            SendToSyslogAsync(cefPayload),
+            SendToSyslogAsync(cefPayload, false),
             WriteToEventLogAsync(eventId, name, severity, cefPayload),
-            WriteToFlatFileAsync(cefPayload)
+            WriteToFlatFileAsync(cefPayload, false)
         ).ConfigureAwait(false);
     }
 
@@ -46,9 +68,9 @@ public class AlertDispatcher
         return $"CEF:0|VaxDrive|VaxAgent|{_version}|{eventId}|{name}|{severity}|{extensions}";
     }
 
-    private async Task SendToSyslogAsync(string payload)
+    // internal for testing
+    internal async Task SendToSyslogAsync(string payload, bool isRetry)
     {
-        // Skip if Syslog host is empty or dummy value
         if (string.IsNullOrEmpty(_syslogHost) || _syslogHost == "DISABLED") return;
 
         try
@@ -59,7 +81,52 @@ public class AlertDispatcher
         }
         catch
         {
-            // Silently drop if network is unavailable to prevent agent crash
+            if (!isRetry)
+            {
+                _retryQueue.Enqueue(new FailedAlert { Payload = payload, Attempts = 1 });
+            }
+            else
+            {
+                throw;
+            }
+        }
+    }
+
+    private async Task RetryLoopAsync(CancellationToken token)
+    {
+        while (!token.IsCancellationRequested)
+        {
+            int count = _retryQueue.Count;
+            for (int i = 0; i < count; i++)
+            {
+                if (_retryQueue.TryDequeue(out var alert))
+                {
+                    try
+                    {
+                        await SendToSyslogAsync(alert.Payload, true).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        alert.Attempts++;
+                        if (alert.Attempts >= 3)
+                        {
+                            await WriteToFlatFileAsync(alert.Payload, true).ConfigureAwait(false);
+                        }
+                        else
+                        {
+                            _retryQueue.Enqueue(alert);
+                        }
+                    }
+                }
+            }
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(30), token).ConfigureAwait(false);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
         }
     }
 
@@ -70,7 +137,6 @@ public class AlertDispatcher
             if (OperatingSystem.IsWindows())
             {
                 string source = "VaxDrive";
-                // Skip if not registered/admin rights, EventLog.SourceExists can throw so catch it
                 try
                 {
                     if (!EventLog.SourceExists(source)) return Task.CompletedTask;
@@ -89,15 +155,22 @@ public class AlertDispatcher
         return Task.CompletedTask;
     }
 
-    private async Task WriteToFlatFileAsync(string payload)
+    private async Task WriteToFlatFileAsync(string payload, bool force)
     {
-        if (string.IsNullOrEmpty(_flatFilePath)) return;
+        string dirPath = _flatFilePath;
+        
+        if (string.IsNullOrEmpty(dirPath))
+        {
+            if (!force) return;
+            // Fallback for forced writes (e.g. after 3 failed UDP attempts)
+            dirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+        }
 
         try
         {
             string dateStr = DateTime.UtcNow.ToString("yyyyMMdd");
             string filename = $"alerts_{dateStr}.log";
-            string fullPath = Path.Combine(_flatFilePath, filename);
+            string fullPath = Path.Combine(dirPath, filename);
 
             string hmacHex = "";
             if (!string.IsNullOrEmpty(_buildKey))
@@ -109,21 +182,18 @@ public class AlertDispatcher
 
             string logLine = $"[{DateTime.UtcNow:O}] [HMAC:{hmacHex}] {payload}{Environment.NewLine}";
 
-            // Ensure directory exists
-            string? dir = Path.GetDirectoryName(fullPath);
-            if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+            if (!Directory.Exists(dirPath))
             {
-                Directory.CreateDirectory(dir);
+                Directory.CreateDirectory(dirPath);
             }
 
-            // Using FileShare.ReadWrite for concurrent append safety
             using var stream = new FileStream(fullPath, FileMode.Append, FileAccess.Write, FileShare.ReadWrite, 4096, true);
             byte[] bytes = Encoding.UTF8.GetBytes(logLine);
             await stream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
         }
         catch
         {
-            // Silently drop file write errors
+            // Silently drop
         }
     }
 }

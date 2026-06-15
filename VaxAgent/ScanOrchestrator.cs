@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using VaxDrive.Models;
 using VaxDrive.VaxAgent.Checks;
 
@@ -15,39 +16,68 @@ public sealed class ScanOrchestrator
     {
         _checks = checks;
     }
-    // Initializes the orchestrator with an injected collection of checks to run.
-    // Returns a new ScanOrchestrator instance.
 
     public ScanResult RunAll(ScanContext context)
     {
-        Stopwatch sw = Stopwatch.StartNew();
-
         foreach (ICheck check in _checks)
         {
-            if (sw.Elapsed > _budget)
+            var sw = Stopwatch.StartNew();
+            using var cts = new CancellationTokenSource();
+            
+#if NET8_0
+            cts.Token.Register(() => 
             {
-                context.Result.CheckErrors["Orchestrator"] = "Scan aborted: exceeded 90 second budget.";
-                break;
-            }
+                Console.WriteLine($"[HMAC_AUDIT] {DateTime.UtcNow:O} | Orchestrator | thread abandoned for {check.Name} after {sw.ElapsedMilliseconds}ms.");
+            });
+#endif
 
-            try
+            Thread workerThread = new Thread(() =>
             {
-                CheckResult result = check.Run(context);
-                if (!result.Success)
+                try
                 {
-                    context.Result.CheckErrors[check.Name] = result.Error ?? "Unknown error";
+                    CheckResult result = check.Run(context, cts.Token);
+                    if (!result.Success)
+                    {
+                        context.Result.CheckErrors[check.Name] = result.Error ?? "Unknown error";
+                    }
+                }
+#if NET35
+                catch (ThreadAbortException)
+                {
+                    Thread.ResetAbort();
+                }
+#endif
+                catch (Exception ex)
+                {
+                    context.Result.CheckErrors[check.Name] = $"Unhandled exception: {ex.Message}";
+                }
+            });
+            
+            workerThread.IsBackground = true;
+            workerThread.Start();
+            
+            bool completed = false;
+            while (sw.Elapsed < _budget)
+            {
+                if (workerThread.Join(1000))
+                {
+                    completed = true;
+                    break;
                 }
             }
-            catch (Exception ex)
+            
+            if (!completed)
             {
-                // Double safety net: catching exceptions that escaped the check module's internal try/catch
-                context.Result.CheckErrors[check.Name] = $"Unhandled exception: {ex.Message}";
+                cts.Cancel();
+                
+#if NET35
+                try { workerThread.Abort(); } catch { }
+#endif
+                Console.WriteLine($"[HMAC_AUDIT] {DateTime.UtcNow:O} | Orchestrator | Module {check.Name} timed out after {sw.ElapsedMilliseconds}ms.");
+                context.Result.CheckErrors[check.Name] = "Scan aborted: exceeded 90 second budget.";
             }
         }
 
-        sw.Stop();
         return context.Result;
     }
-    // Sequentially runs all injected checks against the context while enforcing a 90-second execution budget.
-    // Returns the populated ScanResult from the context.
 }

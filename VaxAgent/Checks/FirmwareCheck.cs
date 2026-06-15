@@ -1,5 +1,6 @@
 using System;
 using System.Management;
+using System.Threading;
 using VaxDrive.Models;
 
 namespace VaxDrive.VaxAgent.Checks;
@@ -9,13 +10,16 @@ public sealed class FirmwareCheck : ICheck
     public string Name => "FirmwareCheck";
     // Returns the static name of the check.
 
-    public CheckResult Run(ScanContext context)
+    public CheckResult Run(ScanContext context, CancellationToken ct)
     {
         try
         {
-            string biosString = GetBiosString();
+            FirmwareRecord record = GetFirmwareRecord();
             string computerName = Environment.MachineName;
 
+            context.Result.Firmware = record;
+
+            string biosString = $"{record.Manufacturer} {record.SMBIOSBIOSVersion} {record.ReleaseDate} {record.SerialNumber}";
             context.Result.DeviceFingerprint = GenerateFingerprint(computerName, biosString);
 
             return CheckResult.Ok();
@@ -28,28 +32,73 @@ public sealed class FirmwareCheck : ICheck
     // Runs the FirmwareCheck to extract BIOS strings and generate the device fingerprint.
     // Returns a CheckResult indicating success or capturing the failure exception.
 
-    private string GetBiosString()
+    internal static FirmwareRecord GetFirmwareRecord()
     {
+        var record = new FirmwareRecord();
+        int missingCount = 0;
+        bool found = false;
+
 #if NET35
         using (var searcher = new ManagementObjectSearcher("SELECT Manufacturer, SMBIOSBIOSVersion, ReleaseDate, SerialNumber FROM Win32_BIOS"))
         {
             foreach (ManagementObject obj in searcher.Get())
             {
-                string manufacturer = obj["Manufacturer"]?.ToString() ?? "Unknown";
-                string version = obj["SMBIOSBIOSVersion"]?.ToString() ?? "Unknown";
-                return $"{manufacturer} {version}";
+                record.Manufacturer = ParseField(obj, "Manufacturer", ref missingCount);
+                record.SMBIOSBIOSVersion = ParseField(obj, "SMBIOSBIOSVersion", ref missingCount);
+                record.ReleaseDate = ParseField(obj, "ReleaseDate", ref missingCount);
+                record.SerialNumber = ParseField(obj, "SerialNumber", ref missingCount);
+                found = true;
+                break;
             }
         }
 #else
         using var searcher = new ManagementObjectSearcher("SELECT Manufacturer, SMBIOSBIOSVersion, ReleaseDate, SerialNumber FROM Win32_BIOS");
         foreach (ManagementBaseObject obj in searcher.Get())
         {
-            string manufacturer = obj["Manufacturer"]?.ToString() ?? "Unknown";
-            string version = obj["SMBIOSBIOSVersion"]?.ToString() ?? "Unknown";
-            return $"{manufacturer} {version}";
+            record.Manufacturer = ParseField(obj, "Manufacturer", ref missingCount);
+            record.SMBIOSBIOSVersion = ParseField(obj, "SMBIOSBIOSVersion", ref missingCount);
+            record.ReleaseDate = ParseField(obj, "ReleaseDate", ref missingCount);
+            record.SerialNumber = ParseField(obj, "SerialNumber", ref missingCount);
+            found = true;
+            break;
         }
 #endif
-        return "Unknown BIOS";
+        if (!found)
+        {
+            missingCount = 4;
+            record.Manufacturer = "UNKNOWN_Manufacturer";
+            record.SMBIOSBIOSVersion = "UNKNOWN_SMBIOSBIOSVersion";
+            record.ReleaseDate = "UNKNOWN_ReleaseDate";
+            record.SerialNumber = "UNKNOWN_SerialNumber";
+        }
+
+        record.ConfidenceScore = CalculateConfidence(missingCount);
+        
+        Console.WriteLine($"[HMAC_AUDIT] {DateTime.UtcNow:O} | [FIRMWARE] confidence={record.ConfidenceScore:F2} fields={record.Manufacturer}|{record.SMBIOSBIOSVersion}|{record.ReleaseDate}|{record.SerialNumber}");
+
+        return record;
+    }
+
+    internal static double CalculateConfidence(int missingCount)
+    {
+        return Math.Max(0.0, 1.0 - (missingCount * 0.25));
+    }
+    
+    internal static string ParseField(ManagementBaseObject obj, string fieldName, ref int missingCount)
+    {
+        string? val = null;
+        try
+        {
+            val = obj[fieldName]?.ToString();
+        }
+        catch { } // Field doesn't exist or other error
+
+        if (string.IsNullOrEmpty(val))
+        {
+            missingCount++;
+            return $"UNKNOWN_{fieldName}";
+        }
+        return val;
     }
     // Queries WMI Win32_BIOS to extract the Manufacturer and Version.
     // Returns a concatenated BIOS string.
