@@ -22,7 +22,10 @@
 | **1.3.0** | Cadence, Trends, Export | 7 | | ✅ Complete |
 | **1.4.0** | OLED + UX Polish | 7 | | ✅ Complete |
 | **2.0.0** | Production Hardened Release | all | Full hardware, pen-tested | ✅ Complete |
-| **3.0.0** | Enterprise Edition | 9 | Advanced Threat & Intel | 🚧 Planned |
+| **3.0.0** | Enterprise Edition | 9 | Advanced Threat & Intel | ✅ Complete |
+| **3.1.0** | Production Packager | 10 | Secure Self-Updater | ✅ Complete |
+| **3.2.0** | Reporting & Operator Console | 11 | AlertDispatcher | ✅ Complete |
+| **3.7.0** | Technical Debt Remediation | Sprint D | Zero Drawbacks | ✅ Complete |
 
 ---
 

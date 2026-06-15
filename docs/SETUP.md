@@ -16,9 +16,10 @@ This guide details the complete, end-to-end process for configuring your develop
 Before compiling, you **must** configure the cryptographic keys:
 1. Locate the `.env.example` file in the repository root.
 2. Copy it to `.env` (`cp .env.example .env`).
-3. If they are not already populated, generate two strong 32-byte Base64 encoded keys:
+3. If they are not already populated, generate three strong 32-byte Base64 encoded keys:
    - `VAXDRIVE_MASTER_KEY`: Secures the AES-256-GCM payload.
    - `VAXDRIVE_HMAC_KEY`: Guarantees integrity against tampering.
+   - `VAXDRIVE_BUILD_KEY`: Secures crash logs and self-update manifests.
    *(These must remain highly secure and air-gapped.)*
 
 ---

@@ -27,3 +27,5 @@ bld/
 *.vax
 *.env
 deploy_payload/
+updates_staging/
+*.flag
