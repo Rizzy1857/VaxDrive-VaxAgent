@@ -56,4 +56,23 @@ public sealed class DeviceRepository
         
         return Convert.ToInt32(cmd.ExecuteScalar());
     }
+
+    public List<string> GetOverdueDevices(int days)
+    {
+        SqliteConnection conn = DatabaseBootstrap.GetConnection();
+        using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT Id 
+            FROM Devices 
+            WHERE datetime(LastSeen) < datetime('now', @days)";
+        cmd.Parameters.AddWithValue("@days", $"-{days} days");
+        
+        List<string> results = new List<string>();
+        using SqliteDataReader reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(reader.GetString(0));
+        }
+        return results;
+    }
 }

@@ -117,4 +117,42 @@ public sealed class ScanRepository
             throw;
         }
     }
+
+    public System.Collections.Generic.IReadOnlyList<ScanSummary> GetScanHistory(string deviceId)
+    {
+        SqliteConnection conn = DatabaseBootstrap.GetConnection();
+        using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            SELECT s.ScanId, s.Timestamp,
+                   COUNT(CASE WHEN f.Severity = 'CRITICAL' AND f.ResolvedAt IS NULL THEN 1 END) AS CriticalCount,
+                   COUNT(CASE WHEN f.ResolvedAt IS NOT NULL THEN 1 END) AS ResolvedCount
+            FROM Scans s
+            LEFT JOIN Findings f ON f.ScanId = s.ScanId
+            WHERE s.DeviceId = @deviceId
+            GROUP BY s.ScanId, s.Timestamp
+            ORDER BY s.Timestamp ASC";
+        cmd.Parameters.AddWithValue("@deviceId", deviceId);
+
+        var results = new System.Collections.Generic.List<ScanSummary>();
+        using SqliteDataReader reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            results.Add(new ScanSummary
+            {
+                ScanId = reader.GetString(0),
+                Timestamp = reader.GetString(1),
+                CriticalCount = reader.GetInt32(2),
+                ResolvedCount = reader.GetInt32(3)
+            });
+        }
+        return results;
+    }
+}
+
+public sealed class ScanSummary
+{
+    public string ScanId { get; init; } = "";
+    public string Timestamp { get; init; } = "";
+    public int CriticalCount { get; init; }
+    public int ResolvedCount { get; init; }
 }

@@ -8,6 +8,8 @@ namespace VaxDrive.VaxDock.Views;
 
 public partial class Dashboard : Window
 {
+    private bool _isCadenceAlertDismissed = false;
+
     public Dashboard()
     {
         InitializeComponent();
@@ -38,17 +40,37 @@ public partial class Dashboard : Window
         DevicesGrid.ItemsSource = summaries;
         TotalDevicesText.Text = summaries.Count.ToString();
 
-        // Cadence alerts logic refactored to SQL
-        int overdueCount = App.DeviceRepo.GetOverdueDevicesCount(7);
-        if (overdueCount > 0)
+        if (_isCadenceAlertDismissed)
         {
-            CadenceAlertText.Text = $"⚠️ {overdueCount} devices have not been scanned in over 7 days.";
-            CadenceAlertText.Visibility = Visibility.Visible;
+            CadenceAlertBanner.Visibility = Visibility.Collapsed;
         }
         else
         {
-            CadenceAlertText.Visibility = Visibility.Collapsed;
+            var appSettings = Services.SettingsManager.Load();
+            int threshold = appSettings.CadenceThresholdDays;
+            
+            var overdueDevices = App.DeviceRepo.GetOverdueDevices(threshold);
+            if (overdueDevices.Count > 0)
+            {
+                CadenceAlertTitle.Text = $"⚠️ {overdueDevices.Count} devices have not been scanned in over {threshold} days.";
+                CadenceAlertDevices.Text = string.Join(" · ", overdueDevices.Take(3));
+                if (overdueDevices.Count > 3)
+                {
+                    CadenceAlertDevices.Text += $" and {overdueDevices.Count - 3} more...";
+                }
+                CadenceAlertBanner.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                CadenceAlertBanner.Visibility = Visibility.Collapsed;
+            }
         }
+    }
+
+    private void DismissCadenceAlert_Click(object sender, RoutedEventArgs e)
+    {
+        _isCadenceAlertDismissed = true;
+        CadenceAlertBanner.Visibility = Visibility.Collapsed;
     }
 
     private void Export_Click(object sender, RoutedEventArgs e)

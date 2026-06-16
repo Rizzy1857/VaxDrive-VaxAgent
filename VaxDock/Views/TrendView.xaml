@@ -1,0 +1,9 @@
+<UserControl x:Class="VaxDrive.VaxDock.Views.TrendView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="150" MinWidth="200">
+    <Grid>
+        <TextBlock Text="No scan history available." x:Name="NoDataText" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{StaticResource TextLightBrush}" Visibility="Collapsed"/>
+        <Canvas x:Name="ChartCanvas" Background="{StaticResource BgLighterBrush}" ClipToBounds="True" SizeChanged="ChartCanvas_SizeChanged"/>
+    </Grid>
+</UserControl>

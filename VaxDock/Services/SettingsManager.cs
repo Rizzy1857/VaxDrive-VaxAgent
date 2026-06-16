@@ -7,6 +7,7 @@ namespace VaxDrive.VaxDock.Services;
 public class AppSettings
 {
     public string NvdApiKey { get; set; } = string.Empty;
+    public int CadenceThresholdDays { get; set; } = 7;
 }
 
 public static class SettingsManager
