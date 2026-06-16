@@ -49,5 +49,5 @@ The VaxDrive system is composed of three interconnected nodes, each handling a d
 ## 4. Critical Reading
 
 > [!IMPORTANT]  
-> **Mandatory Reading**: Before writing a single line of code, you must read [`/docs/SENIOR_ENGINEER_TRAPS.md`](file:///Users/rizzy/Documents/GitHub/VaxDrive-VaxAgent/docs/SENIOR_ENGINEER_TRAPS.md).  
+> **Mandatory Reading**: Before writing a single line of code, must read [`/docs/SENIOR_ENGINEER_TRAPS.md`](file:///Users/rizzy/Documents/GitHub/VaxDrive-VaxAgent/docs/SENIOR_ENGINEER_TRAPS.md).  
 > It contains hard-learned, real-world lessons about SQLite concurrency, WPF threading, and OT network fragility (e.g., why you never send write PDUs to a 1990s Siemens PLC).
