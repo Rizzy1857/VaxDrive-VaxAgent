@@ -1,7 +1,8 @@
 # VAXDRIVE
 > **Portable OT Vulnerability Vaccine** — Passive · Offline · Zero-write · Cryptographically sealed
 
-[![status](https://img.shields.io/badge/status-concept%20design-orange)]()
+[![status](https://img.shields.io/badge/status-production-brightgreen)]()
+[![version](https://img.shields.io/badge/version-v3.7.0-blue)]()
 [![stack](https://img.shields.io/badge/stack-.NET%208%20%7C%20WPF%20%7C%20SQLite-blue)]()
 [![security](https://img.shields.io/badge/crypto-AES--256--GCM%20%2B%20HMAC--SHA256-green)]()
 [![target](https://img.shields.io/badge/target-OT%20%7C%20ICS%20%7C%20HMI-red)]()
@@ -93,36 +94,11 @@ Each scan writes one file:
 `.vax` = AES-256-GCM encrypted JSON, key derived from drive hardware token.  
 Each file is HMAC-SHA256 signed. Any bit flip = invalid on import.
 
-```json
-{
-  "scan_id": "a3f9...",
-  "device_fingerprint": "PLANT-HMI-07",
-  "timestamp": "2026-06-12T09:14:22Z",
-  "os": "Windows 7 Embedded SP1",
-  "patch_level": "KB2999226 missing",
-  "findings": [
-    {
-      "id": "CVE-2017-0144",
-      "severity": "CRITICAL",
-      "component": "SMBv1",
-      "status": "EXPLOITABLE",
-      "remediation_id": "REM-SMB-001"
-    }
-  ],
-  "usb_anomalies": ["Unknown VID 0x1234 plugged 2026-06-01"],
-  "open_ports": [445, 139, 3389],
-  "plc_neighbors": [
-    { "ip": "192.168.10.44", "banner": "Siemens S7-300 v3.2.1", "open": [102] }
-  ],
-  "signature": "HMAC:9c3a..."
-}
-```
-
 ---
 
 ## HALF 2 — VaxDock (Laptop App)
 
-Standalone WPF app. Separate repo, clean boundary from other tooling. Architecturally compatible for future merge.
+Standalone WPF app. Separate repo, clean boundary from other tooling.
 
 ### On Drive Plug-in to Laptop
 
@@ -131,39 +107,16 @@ Standalone WPF app. Separate repo, clean boundary from other tooling. Architectu
 3. Verifies every HMAC signature (any failure = quarantined, flagged)
 4. Ingests into local SQLite database
 
-### Dashboard
-
-```
-┌─────────────────────────────────────────────────────┐
-│  VAXDOCK  │  Devices: 12  │  Critical: 3  │  New: 2 │
-├──────────┬──────────────────────────────────────────┤
-│ DEVICE   │  LAST SCAN   │  CRITICAL │ HIGH │ STATUS  │
-│ HMI-07   │  Jun 12      │    2      │  4   │   🔴    │
-│ HMI-03   │  Jun 05      │    0      │  1   │   🟡    │
-│ ENG-PC-1 │  Jun 12      │    1      │  2   │   🔴    │
-├──────────┴──────────────────────────────────────────┤
-│  [FINDING DETAIL]                                    │
-│  CVE-2017-0144 · EternalBlue · SMBv1 · CRITICAL     │
-│  Device: HMI-07 · Detected: Jun 12                  │
-│                                                      │
-│  REMEDIATION:                                        │
-│  1. Control Panel → Programs → Windows Features      │
-│  2. Uncheck "SMB 1.0/CIFS File Sharing Support"      │
-│  3. Reboot. Verify: sc query mrxsmb10                │
-│                                                      │
-│  [Mark Resolved]  [Escalate to Supervisor]  [Export] │
-└─────────────────────────────────────────────────────┘
-```
-
 ### Features
 
 | Feature | Description |
 |---|---|
+| Comprehensive NVD Sync | Pulls and deduplicates the latest OT-specific vulnerabilities (Siemens, Mitsubishi, Toyopuc, Windows) directly from NIST NVD API. |
 | Remediation cards | Pre-authored per CVE — plain language, operator-readable, no jargon |
 | Cadence tracking | Flags devices not scanned within configured window (weekly/monthly) |
 | Trend view | Per-device vuln history across scan cycles — posture improving or degrading |
 | Export | PDF / CSV report for supervisor or audit trail |
-| Zero network | Fully air-gapped. No telemetry. No phone-home. |
+| Zero network | Fully air-gapped agent operations. Dock only uses network for NVD syncs. |
 
 ---
 
@@ -190,7 +143,7 @@ Standalone WPF app. Separate repo, clean boundary from other tooling. Architectu
 | PLC banner grab | SharpPcap passive + raw TCP S7/Modbus probe (read-only) |
 | VaxDock app | WPF .NET 8 |
 | Local database | SQLite via `Microsoft.Data.Sqlite` — parameterized raw SQL only |
-| CVE definitions | OT-scoped JSON pack (NVD pipeline repurposed from existing tooling) |
+| CVE definitions | OT-scoped JSON pack (NVD API integrated) |
 | HID launcher | AutoHotkey-compiled stub OR ATtiny85 microcontroller on custom drive |
 
 ---
@@ -200,24 +153,10 @@ Standalone WPF app. Separate repo, clean boundary from other tooling. Architectu
 ```
 vaxdrive/
 ├── VaxAgent/                  # Scanner binary (C# .NET 8 / 3.5 conditional)
-│   ├── Checks/                # Individual check modules (OS, USB, ports, PLC...)
-│   ├── Crypto/                # AES-GCM encrypt + HMAC sign
-│   ├── Definitions/           # CVE pack loader + matcher
-│   ├── Output/                # .vax file writer
-│   └── VaxAgent.csproj
-│
 ├── VaxDock/                   # Laptop app (WPF .NET 8)
-│   ├── Views/                 # Dashboard, DeviceDetail, RemediationCard
-│   ├── Data/                  # SQLite repository — raw parameterized SQL
-│   ├── Crypto/                # .vax decrypt + HMAC verify
-│   ├── Models/                # ScanResult, Finding, Device
-│   └── VaxDock.csproj
-│
 ├── Definitions/               # CVE/signature pack source + build scripts
 ├── Launcher/                  # HID stub source (AHK or ATtiny85 firmware)
-├── Tests/
-│   ├── VaxAgent.Tests/
-│   └── VaxDock.Tests/
+├── Tests/                     # xUnit test suites
 ├── .gitignore
 ├── .env.example               # No keys hardcoded — env vars only
 └── README.md
@@ -229,7 +168,7 @@ vaxdrive/
 
 - **No credentials hardcoded** — all keys via environment variables or hardware token derivation
 - **No writes to target host** — agent runs in-memory, results to drive only
-- **No network calls** — fully air-gapped design, zero telemetry
+- **No network calls from agent** — fully air-gapped design, zero telemetry
 - **No external ORMs** — parameterized raw SQL throughout VaxDock
 - **Signed binaries** — all drive-resident executables code-signed; agent self-verifies on launch
 - **HMAC integrity** — every `.vax` file verified before import; any corruption = quarantine
@@ -243,20 +182,6 @@ vaxdrive/
 - Does not touch PLC logic, ladder diagrams, or process memory
 - Does not write anything to target devices
 - Does not phone home
-
----
-
-## Build Phases
-
-| Phase | Deliverable | Key Risk |
-|---|---|---|
-| 1 | VaxAgent — Windows checks only (no PLC) | XP/.NET 3.5 compat |
-| 2 | .vax crypto output + HMAC signing | Key derivation from hardware token |
-| 3 | VaxDock — ingest, decrypt, SQLite, basic dashboard | HMAC verify pipeline |
-| 4 | Remediation card library (top 20 OT CVEs) | Content authoring |
-| 5 | PLC banner grab (S7/Modbus) | Protocol library selection |
-| 6 | HID launcher (AHK stub) | Target policy lockdown fallback |
-| 7 | Cadence tracking, trend view, export | UX polish |
 
 ---
 
