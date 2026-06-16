@@ -35,15 +35,38 @@ public class NvdSyncService
             RemediationCards = new List<RemediationCard>()
         };
 
-        var keywords = new[] { "Siemens", "Mitsubishi", "Toyopuc", "Windows Embedded", "Windows" };
+        var queries = new List<(string Type, string Value)>
+        {
+            ("keyword", "Siemens"),
+            ("keyword", "Mitsubishi"),
+            ("keyword", "Toyopuc"),
+            ("keyword", "Windows Embedded"),
+            ("keyword", "Windows")
+        };
+
+        var topCves = new[] { 
+            "CVE-2017-0144", "CVE-2019-0708", "CVE-2021-34527", "CVE-2020-0601",
+            "CVE-2017-0147", "CVE-2019-1040", "CVE-2020-1472", "CVE-2021-44228",
+            "CVE-2018-7600", "CVE-2022-30190", "CVE-2017-0290", "CVE-2019-0803",
+            "CVE-2021-26855", "CVE-2022-21907", "CVE-2023-23397", "CVE-2021-1675",
+            "CVE-2016-0099", "CVE-2020-16898", "CVE-2017-8464", "CVE-2019-0211"
+        };
+
+        foreach (var cve in topCves)
+        {
+            queries.Add(("cve", cve));
+        }
+
         var errors = new List<string>();
 
-        foreach (var keyword in keywords)
+        foreach (var query in queries)
         {
             try
             {
-                string encodedKeyword = Uri.EscapeDataString(keyword);
-                string url = $"https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=100&keywordSearch={encodedKeyword}";
+                string encodedValue = Uri.EscapeDataString(query.Value);
+                string url = query.Type == "keyword" 
+                    ? $"https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=100&keywordSearch={encodedValue}"
+                    : $"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={encodedValue}";
 
                 var response = await _client.GetAsync(url);
                 response.EnsureSuccessStatusCode();
@@ -62,6 +85,10 @@ public class NvdSyncService
                     {
                         severity = v31Array[0].GetProperty("cvssData").GetProperty("baseSeverity").GetString() ?? "Medium";
                     }
+                    else if (metrics.TryGetProperty("cvssMetricV2", out var v2Array) && v2Array.GetArrayLength() > 0)
+                    {
+                        severity = v2Array[0].GetProperty("baseSeverity").GetString() ?? "Medium";
+                    }
 
                     if (pack.SoftwareCveRules.Exists(r => r.Id == id)) continue;
 
@@ -69,10 +96,10 @@ public class NvdSyncService
                     {
                         Id = id,
                         Severity = severity,
-                        Component = keyword,
+                        Component = query.Value,
                         Status = "Active",
                         RemediationId = $"REM-{id}",
-                        Match = new RuleMatch { Type = "installed_software", SoftwareName = keyword, MinVersion = "0.0", MaxVersion = "9.9" }
+                        Match = new RuleMatch { Type = "installed_software", SoftwareName = query.Type == "keyword" ? query.Value : "Target Software", MinVersion = "0.0", MaxVersion = "9.9" }
                     });
 
                     pack.RemediationCards.Add(new RemediationCard
@@ -83,11 +110,11 @@ public class NvdSyncService
                     });
                 }
                 
-                await Task.Delay(2000);
+                await Task.Delay(1500); // slightly faster delay to account for larger query set
             }
             catch (Exception ex)
             {
-                errors.Add($"Failed for '{keyword}': {ex.Message}");
+                errors.Add($"Failed for '{query.Value}': {ex.Message}");
             }
         }
 
