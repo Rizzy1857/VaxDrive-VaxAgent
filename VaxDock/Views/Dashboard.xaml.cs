@@ -61,7 +61,7 @@ public partial class Dashboard : Window
 
     private async void SyncNvd_Click(object sender, RoutedEventArgs e)
     {
-        string apiKey = NvdApiKeyBox.Password;
+        string apiKey = NvdApiKeyBox.Password.Trim();
         var settings = Services.SettingsManager.Load();
         settings.NvdApiKey = apiKey;
         Services.SettingsManager.Save(settings);
@@ -76,6 +76,13 @@ public partial class Dashboard : Window
         {
             MessageBox.Show($"Failed to sync NVD: {ex.Message}", "Sync Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    private void ViewDefinitions_Click(object sender, RoutedEventArgs e)
+    {
+        var syncedWindow = new SyncedDefinitions();
+        syncedWindow.Owner = this;
+        syncedWindow.ShowDialog();
     }
 
     private void PrepareDrive_Click(object sender, RoutedEventArgs e)

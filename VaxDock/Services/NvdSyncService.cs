@@ -14,6 +14,11 @@ public class NvdSyncService
 
     public async Task SyncDefinitionsAsync(string apiKey)
     {
+        if (!_client.DefaultRequestHeaders.Contains("User-Agent"))
+        {
+            _client.DefaultRequestHeaders.Add("User-Agent", "VaxDrive-VaxAgent/2.0.0");
+        }
+
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             if (_client.DefaultRequestHeaders.Contains("apiKey"))
@@ -22,10 +27,6 @@ public class NvdSyncService
             _client.DefaultRequestHeaders.Add("apiKey", apiKey);
         }
 
-        // Fetch recent OT vulnerabilities (Mock filter: Siemens, Rockwell, Schneider)
-        // Note: For production, a more complex paginated crawler is required.
-        string url = "https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=10&keywordSearch=Siemens";
-        
         DefinitionPack pack = new DefinitionPack
         {
             PackVersion = "2.0.0",
@@ -34,49 +35,71 @@ public class NvdSyncService
             RemediationCards = new List<RemediationCard>()
         };
 
-        try
+        var keywords = new[] { "Siemens", "Mitsubishi", "Toyopuc", "Windows Embedded", "Windows" };
+        var errors = new List<string>();
+
+        foreach (var keyword in keywords)
         {
-            var response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var jsonString = await response.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(jsonString);
-
-            var vulnerabilities = doc.RootElement.GetProperty("vulnerabilities");
-            foreach (var vuln in vulnerabilities.EnumerateArray())
+            try
             {
-                var cve = vuln.GetProperty("cve");
-                string id = cve.GetProperty("id").GetString() ?? "UNKNOWN";
-                
-                string severity = "Medium";
-                if (cve.TryGetProperty("metrics", out var metrics) && metrics.TryGetProperty("cvssMetricV31", out var v31Array) && v31Array.GetArrayLength() > 0)
+                string encodedKeyword = Uri.EscapeDataString(keyword);
+                string url = $"https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=100&keywordSearch={encodedKeyword}";
+
+                var response = await _client.GetAsync(url);
+                response.EnsureSuccessStatusCode();
+
+                var jsonString = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(jsonString);
+
+                var vulnerabilities = doc.RootElement.GetProperty("vulnerabilities");
+                foreach (var vuln in vulnerabilities.EnumerateArray())
                 {
-                    severity = v31Array[0].GetProperty("cvssData").GetProperty("baseSeverity").GetString() ?? "Medium";
+                    var cve = vuln.GetProperty("cve");
+                    string id = cve.GetProperty("id").GetString() ?? "UNKNOWN";
+                    
+                    string severity = "Medium";
+                    if (cve.TryGetProperty("metrics", out var metrics) && metrics.TryGetProperty("cvssMetricV31", out var v31Array) && v31Array.GetArrayLength() > 0)
+                    {
+                        severity = v31Array[0].GetProperty("cvssData").GetProperty("baseSeverity").GetString() ?? "Medium";
+                    }
+
+                    if (pack.SoftwareCveRules.Exists(r => r.Id == id)) continue;
+
+                    pack.SoftwareCveRules.Add(new SoftwareCveRule
+                    {
+                        Id = id,
+                        Severity = severity,
+                        Component = keyword,
+                        Status = "Active",
+                        RemediationId = $"REM-{id}",
+                        Match = new RuleMatch { Type = "installed_software", SoftwareName = keyword, MinVersion = "0.0", MaxVersion = "9.9" }
+                    });
+
+                    pack.RemediationCards.Add(new RemediationCard
+                    {
+                        Id = $"REM-{id}",
+                        Title = $"Remediate {id}",
+                        Steps = new List<string> { "Isolate component from IT network", "Apply vendor patch via secure USB" }
+                    });
                 }
-
-                pack.SoftwareCveRules.Add(new SoftwareCveRule
-                {
-                    Id = id,
-                    Severity = severity,
-                    Component = "Siemens Automation",
-                    Status = "Active",
-                    RemediationId = $"REM-{id}",
-                    Match = new RuleMatch { Type = "installed_software", SoftwareName = "Siemens", MinVersion = "0.0", MaxVersion = "9.9" }
-                });
-
-                pack.RemediationCards.Add(new RemediationCard
-                {
-                    Id = $"REM-{id}",
-                    Title = $"Remediate {id}",
-                    Steps = new List<string> { "Isolate PLC from IT network", "Apply vendor patch via secure USB" }
-                });
+                
+                await Task.Delay(2000);
+            }
+            catch (Exception ex)
+            {
+                errors.Add($"Failed for '{keyword}': {ex.Message}");
             }
         }
-        catch (Exception ex)
+
+        if (pack.SoftwareCveRules.Count == 0)
         {
-            // NVD API is frequently 503 or blocks without an API key. 
-            // For the sake of the air-gapped demo flow, we inject a fallback OT payload if it fails.
-            Console.WriteLine($"NVD API Failed: {ex.Message}. Using fallback OT rules.");
+            // If we collected errors, throw them so the UI can show the user what actually went wrong
+            if (errors.Count > 0)
+            {
+                throw new Exception("All API calls failed. Errors:\n" + string.Join("\n", errors));
+            }
+            
+            // Otherwise, inject fallback just in case
             pack.SoftwareCveRules.Add(new SoftwareCveRule
             {
                 Id = "CVE-2023-FALLBACK",

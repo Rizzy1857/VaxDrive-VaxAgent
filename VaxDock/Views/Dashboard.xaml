@@ -1,7 +1,8 @@
 <Window x:Class="VaxDrive.VaxDock.Views.Dashboard"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="VaxDock - Threat Intelligence Center" Height="700" Width="1000">
+        Title="VaxDock - Threat Intelligence Center" Height="700" Width="1000"
+        Background="{StaticResource BgDarkBrush}" Foreground="{StaticResource TextLightBrush}">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/> <!-- Header & Cadence -->
@@ -24,11 +25,13 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="NVD API Key:" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <PasswordBox x:Name="NvdApiKeyBox" Grid.Column="1" VerticalAlignment="Center" Margin="0,0,15,0"/>
                 <Button Grid.Column="2" Content="Sync NVD Definitions" Click="SyncNvd_Click" Width="180"/>
-                <Button Grid.Column="3" Content="Prepare Drive" Click="PrepareDrive_Click" Width="150" Background="{StaticResource AccentCyanBrush}" Foreground="{StaticResource BgDarkBrush}"/>
+                <Button Grid.Column="3" Content="View Definitions" Click="ViewDefinitions_Click" Width="150"/>
+                <Button Grid.Column="4" Content="Prepare Drive" Click="PrepareDrive_Click" Width="150" Background="{StaticResource AccentCyanBrush}" Foreground="{StaticResource BgDarkBrush}"/>
             </Grid>
         </Border>
 
