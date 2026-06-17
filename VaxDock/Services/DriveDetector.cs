@@ -56,9 +56,13 @@ public sealed class DriveDetector : IDisposable
                     lastDetectedDrive = null;
                 }
             }
-            catch (Exception)
+            catch (IOException)
             {
                 // Ignored: drive yanked or WMI delay mid-poll. Poller will retry in 2s.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Ignored: permissions issue
             }
 
             await Task.Delay(TimeSpan.FromSeconds(2), _cts.Token);

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
+using System.Windows.Controls;
 using VaxDrive.Models;
 
 namespace VaxDrive.VaxDock.Views;
@@ -48,13 +49,31 @@ public partial class SyncedDefinitions : Window
                 PackVersionText.Text = pack.PackVersion;
                 GeneratedText.Text = pack.Generated;
                 RulesCountText.Text = pack.SoftwareCveRules.Count.ToString();
-                RulesGrid.ItemsSource = pack.SoftwareCveRules;
+                RulesList.ItemsSource = pack.SoftwareCveRules;
             }
         }
-        catch (Exception ex)
+        catch (JsonException ex)
         {
             MessageBox.Show($"Failed to load definitions: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             Close();
         }
+        catch (IOException ex)
+        {
+            MessageBox.Show($"Failed to load definitions: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Close();
+        }
+    }
+
+    private void RulesList_ScrollChanged(object sender, ScrollChangedEventArgs e)
+    {
+        var sv = sender as ScrollViewer;
+        if (sv == null) return;
+
+        // Calculate opacity for Top Gradient (fades in as you scroll down)
+        TopGradient.Opacity = Math.Min(sv.VerticalOffset / 50.0, 1.0);
+
+        // Calculate opacity for Bottom Gradient (fades out as you reach the bottom)
+        double bottomDistance = sv.ScrollableHeight - sv.VerticalOffset;
+        BottomGradient.Opacity = sv.ScrollableHeight <= 0 ? 0 : Math.Min(bottomDistance / 50.0, 1.0);
     }
 }

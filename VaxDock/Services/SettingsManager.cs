@@ -6,7 +6,6 @@ namespace VaxDrive.VaxDock.Services;
 
 public class AppSettings
 {
-    public string NvdApiKey { get; set; } = string.Empty;
     public int CadenceThresholdDays { get; set; } = 7;
 }
 
@@ -23,7 +22,15 @@ public static class SettingsManager
                 string json = File.ReadAllText(SettingsFile);
                 return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
             }
-            catch
+            catch (JsonException)
+            {
+                return new AppSettings();
+            }
+            catch (IOException)
+            {
+                return new AppSettings();
+            }
+            catch (UnauthorizedAccessException)
             {
                 return new AppSettings();
             }

@@ -112,7 +112,15 @@ public class NvdSyncService
                 
                 await Task.Delay(1500); // slightly faster delay to account for larger query set
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
+            {
+                errors.Add($"Failed for '{query.Value}': {ex.Message}");
+            }
+            catch (JsonException ex)
+            {
+                errors.Add($"Failed for '{query.Value}': {ex.Message}");
+            }
+            catch (TaskCanceledException ex)
             {
                 errors.Add($"Failed for '{query.Value}': {ex.Message}");
             }
@@ -123,7 +131,7 @@ public class NvdSyncService
             // If we collected errors, throw them so the UI can show the user what actually went wrong
             if (errors.Count > 0)
             {
-                throw new Exception("All API calls failed. Errors:\n" + string.Join("\n", errors));
+                throw new InvalidOperationException("All API calls failed. Errors:\n" + string.Join("\n", errors));
             }
             
             // Otherwise, inject fallback just in case

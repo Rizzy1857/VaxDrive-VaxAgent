@@ -1,0 +1,60 @@
+<UserControl x:Class="VaxDrive.VaxDock.Views.CardSwapControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="280" Width="380">
+    <UserControl.Resources>
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#0A0A0A"/>
+            <Setter Property="BorderBrush" Value="White"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Width" Value="320"/>
+            <Setter Property="Height" Value="180"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="15" Opacity="0.7"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CardTitle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+
+        <Style x:Key="CardDesc" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#BBBBBB"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+    </UserControl.Resources>
+
+    <Canvas x:Name="Container" HorizontalAlignment="Center" VerticalAlignment="Center" Width="320" Height="180" Margin="0,40,0,0">
+        
+        <Border x:Name="CardPrepare" Style="{StaticResource CardStyle}" MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="Prepare">
+            <StackPanel Margin="25" VerticalAlignment="Center">
+                <TextBlock Text="Prepare Drive" Style="{StaticResource CardTitle}" Foreground="#FFDF4C"/>
+                <TextBlock Text="Format and load offline vulnerability definitions securely to the VAXDRIVE USB." Style="{StaticResource CardDesc}"/>
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="CardView" Style="{StaticResource CardStyle}" MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="View">
+            <StackPanel Margin="25" VerticalAlignment="Center">
+                <TextBlock Text="View Definitions" Style="{StaticResource CardTitle}" Foreground="#47D1FF"/>
+                <TextBlock Text="Inspect locally cached NVD rules, zero-days, and custom OT IOCs." Style="{StaticResource CardDesc}"/>
+            </StackPanel>
+        </Border>
+
+        <Border x:Name="CardSync" Style="{StaticResource CardStyle}" MouseLeftButtonDown="Card_MouseLeftButtonDown" Tag="Sync">
+            <StackPanel Margin="25" VerticalAlignment="Center">
+                <TextBlock Text="Sync NVD Definitions" Style="{StaticResource CardTitle}" Foreground="#B886FF"/>
+                <TextBlock Text="Download latest CVE updates from NIST and cryptographically sign the new definition pack." Style="{StaticResource CardDesc}"/>
+            </StackPanel>
+        </Border>
+
+    </Canvas>
+</UserControl>

@@ -45,7 +45,9 @@ public class CveRepository
         if (!string.IsNullOrEmpty(_dbKey))
         {
             using var cmdKey = conn.CreateCommand();
+#pragma warning disable CA2100
             cmdKey.CommandText = $"PRAGMA key = '{_dbKey.Replace("'", "''")}';";
+#pragma warning restore CA2100
             cmdKey.ExecuteNonQuery();
         }
 

@@ -37,32 +37,75 @@
             <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
         </Style>
 
-        <!-- Global Button Style -->
+        <!-- Global Button Style (Glowing Gradient Border) -->
         <Style TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource BgLighterBrush}"/>
+            <Setter Property="Background" Value="#120F17"/>
             <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource AccentCyanBrush}"/>
-            <Setter Property="Padding" Value="15,8"/>
+            <Setter Property="BorderBrush" Value="#26FFFFFF"/>
+            <Setter Property="Padding" Value="20,10"/>
             <Setter Property="Margin" Value="5"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
+                        <Grid>
+                            <!-- Ambient shadow for depth -->
+                            <Border CornerRadius="28" Background="{TemplateBinding Background}" Opacity="0.5">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="Black" BlurRadius="10" ShadowDepth="4" Opacity="0.5"/>
+                                </Border.Effect>
+                            </Border>
+
+                            <!-- Outer Edge Light (Glow) -->
+                            <Border x:Name="OuterGlow" CornerRadius="28" Background="White" Opacity="0">
+                                <Border.Effect>
+                                    <DropShadowEffect Color="#0072FF" BlurRadius="25" ShadowDepth="0" Opacity="1.0"/>
+                                </Border.Effect>
+                            </Border>
+
+                            <!-- Base Card -->
+                            <Border x:Name="BaseCard" CornerRadius="28" BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="{TemplateBinding BorderBrush}" Background="{TemplateBinding Background}"/>
+
+                            <!-- Mesh Gradient Border (Drawn strictly on top as a border stroke) -->
+                            <Border x:Name="MeshBorder" CornerRadius="28" BorderThickness="2" Background="Transparent" Opacity="0" IsHitTestVisible="False">
+                                <Border.BorderBrush>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                        <!-- Dark Blue & Cyan Gradient -->
+                                        <GradientStop Color="#00C6FF" Offset="0.0"/>
+                                        <GradientStop Color="#0072FF" Offset="0.5"/>
+                                        <GradientStop Color="#002244" Offset="1.0"/>
+                                    </LinearGradientBrush>
+                                </Border.BorderBrush>
+                            </Border>
+
+                            <!-- Pressed Overlay -->
+                            <Border x:Name="PressedOverlay" CornerRadius="28" Background="Black" Opacity="0" IsHitTestVisible="False"/>
+
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Grid>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AccentHoverBrush}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="OuterGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
+                                            <DoubleAnimation Storyboard.TargetName="MeshBorder" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.25"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="OuterGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.75"/>
+                                            <DoubleAnimation Storyboard.TargetName="MeshBorder" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.75"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.ExitActions>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="{StaticResource AccentCyanBrush}"/>
-                                <Setter Property="Foreground" Value="{StaticResource BgDarkBrush}"/>
+                                <Setter TargetName="PressedOverlay" Property="Opacity" Value="0.3"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>

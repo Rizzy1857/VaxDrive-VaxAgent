@@ -19,12 +19,6 @@ public partial class Dashboard : Window
 
     private void Dashboard_Loaded(object sender, RoutedEventArgs e)
     {
-        var settings = Services.SettingsManager.Load();
-        if (!string.IsNullOrEmpty(settings.NvdApiKey))
-        {
-            NvdApiKeyBox.Password = settings.NvdApiKey;
-        }
-
         RefreshData();
     }
 
@@ -82,12 +76,9 @@ public partial class Dashboard : Window
         MessageBox.Show($"Exported to {path}", "Export Complete");
     }
 
-    private async void SyncNvd_Click(object sender, RoutedEventArgs e)
+    private async void ActionCards_SyncClicked(object sender, EventArgs e)
     {
         string apiKey = NvdApiKeyBox.Password.Trim();
-        var settings = Services.SettingsManager.Load();
-        settings.NvdApiKey = apiKey;
-        Services.SettingsManager.Save(settings);
 
         try
         {
@@ -95,20 +86,22 @@ public partial class Dashboard : Window
             await syncService.SyncDefinitionsAsync(apiKey);
             MessageBox.Show("NVD Definitions successfully synced and signed.", "Sync Complete", MessageBoxButton.OK, MessageBoxImage.Information);
         }
+#pragma warning disable CA1031
         catch (Exception ex)
         {
             MessageBox.Show($"Failed to sync NVD: {ex.Message}", "Sync Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+#pragma warning restore CA1031
     }
 
-    private void ViewDefinitions_Click(object sender, RoutedEventArgs e)
+    private void ActionCards_ViewClicked(object sender, EventArgs e)
     {
         var syncedWindow = new SyncedDefinitions();
         syncedWindow.Owner = this;
         syncedWindow.ShowDialog();
     }
 
-    private void PrepareDrive_Click(object sender, RoutedEventArgs e)
+    private void ActionCards_PrepareClicked(object sender, EventArgs e)
     {
         // Detect VAXDRIVE USB
         var driveInfo = System.IO.DriveInfo.GetDrives().FirstOrDefault(d => d.IsReady && d.VolumeLabel == "VAXDRIVE");
@@ -147,7 +140,11 @@ public partial class Dashboard : Window
         if (DevicesGrid == null || App.DeviceRepo == null) return;
 
         string deviceFilter = FilterDeviceBox.Text.ToLowerInvariant();
-        string severityFilter = (FilterSeverityCombo.SelectedItem as System.Windows.Controls.ComboBoxItem)?.Content?.ToString() ?? "All";
+        string severityFilter = "All";
+        if (FilterSeverityCritical?.IsChecked == true) severityFilter = "Critical";
+        else if (FilterSeverityHigh?.IsChecked == true) severityFilter = "High";
+        else if (FilterSeverityMedium?.IsChecked == true) severityFilter = "Medium";
+        else if (FilterSeverityLow?.IsChecked == true) severityFilter = "Low";
 
         var allSummaries = App.DeviceRepo.GetDeviceSummaries();
         
@@ -158,6 +155,8 @@ public partial class Dashboard : Window
 
             if (severityFilter == "Critical" && s.CriticalCount == 0) return false;
             if (severityFilter == "High" && s.HighCount == 0 && s.CriticalCount == 0) return false;
+            if (severityFilter == "Medium" && s.MediumCount == 0 && s.HighCount == 0 && s.CriticalCount == 0) return false;
+            if (severityFilter == "Low" && s.LowCount == 0 && s.MediumCount == 0 && s.HighCount == 0 && s.CriticalCount == 0) return false;
 
             return true;
         }).ToList();

@@ -10,6 +10,8 @@ public sealed class DeviceSummary
     public string LastSeen { get; init; } = "";
     public int CriticalCount { get; init; }
     public int HighCount { get; init; }
+    public int MediumCount { get; init; }
+    public int LowCount { get; init; }
     public string AssetCriticality { get; init; } = "UNCLASSIFIED";
 }
 
@@ -24,11 +26,13 @@ public sealed class DeviceRepository
             SELECT d.Id, d.LastSeen,
                    COUNT(CASE WHEN f.Severity = 'CRITICAL' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS CriticalCount,
                    COUNT(CASE WHEN f.Severity = 'HIGH' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS HighCount,
+                   COUNT(CASE WHEN f.Severity = 'MEDIUM' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS MediumCount,
+                   COUNT(CASE WHEN f.Severity = 'LOW' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS LowCount,
                    d.AssetCriticality
             FROM Devices d
             LEFT JOIN Findings f ON f.DeviceId = d.Id
             GROUP BY d.Id
-            ORDER BY CriticalCount DESC, HighCount DESC";
+            ORDER BY CriticalCount DESC, HighCount DESC, MediumCount DESC, LowCount DESC";
             
         List<DeviceSummary> results = new List<DeviceSummary>();
         using SqliteDataReader reader = cmd.ExecuteReader();
@@ -40,7 +44,9 @@ public sealed class DeviceRepository
                 LastSeen = reader.GetString(1),
                 CriticalCount = reader.GetInt32(2),
                 HighCount = reader.GetInt32(3),
-                AssetCriticality = reader.GetString(4)
+                MediumCount = reader.GetInt32(4),
+                LowCount = reader.GetInt32(5),
+                AssetCriticality = reader.GetString(6)
             });
         }
         return results;

@@ -70,10 +70,12 @@ public sealed class IngestPipeline
             {
                 _quarantine.Quarantine(Path.GetFileName(file), ex.Message);
             }
+#pragma warning disable CA1031
             catch (Exception ex)
             {
                 _quarantine.Quarantine(Path.GetFileName(file), "Ingest failure: " + ex.Message);
             }
+#pragma warning restore CA1031
         }
     }
 }
