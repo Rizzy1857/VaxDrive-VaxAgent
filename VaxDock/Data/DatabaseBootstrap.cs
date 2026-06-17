@@ -38,5 +38,13 @@ public static class DatabaseBootstrap
         using SqliteCommand command = _longLivedConnection.CreateCommand();
         command.CommandText = schema;
         command.ExecuteNonQuery();
+
+        // Safe migrations for MVP
+        try { new SqliteCommand("ALTER TABLE Devices ADD COLUMN AssetCriticality TEXT DEFAULT 'UNCLASSIFIED';", _longLivedConnection).ExecuteNonQuery(); } catch { }
+        try { new SqliteCommand("ALTER TABLE Scans ADD COLUMN Completeness TEXT;", _longLivedConnection).ExecuteNonQuery(); } catch { }
+        try { new SqliteCommand("ALTER TABLE Scans ADD COLUMN DefinitionsPackGenerated TEXT;", _longLivedConnection).ExecuteNonQuery(); } catch { }
+        try { new SqliteCommand("ALTER TABLE Findings ADD COLUMN Suppressed INTEGER DEFAULT 0;", _longLivedConnection).ExecuteNonQuery(); } catch { }
+        try { new SqliteCommand("ALTER TABLE Findings ADD COLUMN SuppressReason TEXT;", _longLivedConnection).ExecuteNonQuery(); } catch { }
+        try { new SqliteCommand("ALTER TABLE Findings ADD COLUMN IgnoredUntil TEXT;", _longLivedConnection).ExecuteNonQuery(); } catch { }
     }
 }

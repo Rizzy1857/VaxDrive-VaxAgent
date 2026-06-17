@@ -20,8 +20,8 @@
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="VaxDock Command Center" Style="{StaticResource HeadingStyle}" Margin="0,0,0,10"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
-                    <TextBlock Text="Plant Risk Score: " FontWeight="Bold" FontSize="18" VerticalAlignment="Center" Foreground="{StaticResource AccentCyanBrush}"/>
-                    <TextBlock x:Name="PlantRiskScoreText" Text="-" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextLightBrush}"/>
+                    <TextBlock Text="Devices at Risk: " FontWeight="Bold" FontSize="18" VerticalAlignment="Center" Foreground="#FF6B6B"/>
+                    <TextBlock x:Name="DevicesAtRiskText" Text="-" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextLightBrush}"/>
                 </StackPanel>
             </Grid>
             

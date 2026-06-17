@@ -106,7 +106,7 @@ public class NvdSyncService
                     {
                         Id = $"REM-{id}",
                         Title = $"Remediate {id}",
-                        Steps = new List<string> { "Isolate component from IT network", "Apply vendor patch via secure USB" }
+                        Status = "VendorAdvisory"
                     });
                 }
                 

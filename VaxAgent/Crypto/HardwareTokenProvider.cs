@@ -20,8 +20,8 @@ public static class HardwareTokenProvider
             
             try
             {
-                string bootDir = Path.GetDirectoryName(tokenPath);
-                if (!Directory.Exists(bootDir)) Directory.CreateDirectory(bootDir);
+                string? bootDir = Path.GetDirectoryName(tokenPath);
+                if (bootDir != null && !Directory.Exists(bootDir)) Directory.CreateDirectory(bootDir);
                 File.WriteAllBytes(tokenPath, newToken);
                 System.Console.WriteLine($"[HMAC_AUDIT] {System.DateTime.UtcNow:O} | Provisioned new random hardware token at {tokenPath}");
             }

@@ -68,7 +68,7 @@ public partial class DeviceDetail : Window
     {
         if (CriticalityCombo.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && selectedItem.Content != null)
         {
-            App.DeviceRepo.UpdateAssetCriticality(_deviceId, selectedItem.Content.ToString());
+            App.DeviceRepo.UpdateAssetCriticality(_deviceId, selectedItem.Content?.ToString() ?? "UNCLASSIFIED");
         }
     }
 
@@ -98,11 +98,7 @@ public partial class DeviceDetail : Window
             var stubCard = new VaxDrive.Models.RemediationCard {
                 Id = selectedFinding.RemediationId,
                 Title = "What is the risk: " + selectedFinding.CveId,
-                Steps = new System.Collections.Generic.List<string> { 
-                    "1. Disconnect the device from the network immediately.", 
-                    "2. Contact the Plant Security Lead.", 
-                    "3. Await approval before installing patches." 
-                }
+                Status = "VendorAdvisory"
             };
             
             var cardView = new RemediationCardView(selectedFinding.Id, stubCard);
