@@ -29,8 +29,47 @@
             </Grid>
         </StackPanel>
 
-        <GroupBox Header="Trend History" Grid.Row="1" Margin="0,0,0,15" Foreground="{StaticResource TextLightBrush}" BorderBrush="{StaticResource AccentCyanBrush}">
-            <local:TrendView x:Name="TrendChart"/>
+        <GroupBox Header="Assessment Status &amp; Metadata" Grid.Row="1" Margin="0,0,0,15" Foreground="{StaticResource TextLightBrush}" BorderBrush="{StaticResource AccentCyanBrush}">
+            <Grid Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: Labels -->
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Last Scan:" FontWeight="Bold" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="0" Grid.Column="1" Text="Definitions Age:" FontWeight="Bold" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="Scan Completeness:" FontWeight="Bold" Margin="0,0,10,5"/>
+                <TextBlock Grid.Row="0" Grid.Column="3" Text="Asset Criticality:" FontWeight="Bold" Margin="0,0,10,5"/>
+                
+                <!-- Row 1: Values -->
+                <TextBlock x:Name="LastScanText" Grid.Row="1" Grid.Column="0" Text="Unknown" VerticalAlignment="Center"/>
+                <TextBlock x:Name="DefinitionsAgeText" Grid.Row="1" Grid.Column="1" Text="Unknown" VerticalAlignment="Center"/>
+                <TextBlock x:Name="CompletenessText" Grid.Row="1" Grid.Column="2" Text="Unknown" VerticalAlignment="Center"/>
+                
+                <ComboBox x:Name="CriticalityCombo" Grid.Row="1" Grid.Column="3" Width="130" HorizontalAlignment="Left" SelectionChanged="Criticality_Changed" VerticalAlignment="Center">
+                    <ComboBoxItem Content="CRITICAL"/>
+                    <ComboBoxItem Content="HIGH"/>
+                    <ComboBoxItem Content="MEDIUM"/>
+                    <ComboBoxItem Content="LOW"/>
+                    <ComboBoxItem Content="UNCLASSIFIED"/>
+                </ComboBox>
+
+                <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                    <StackPanel Margin="0,0,20,0" VerticalAlignment="Center">
+                        <TextBlock Text="Overall Status" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        <TextBlock x:Name="AssessmentStatusText" Text="UNKNOWN" FontWeight="Bold" FontSize="16" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                    <Button Content="Suppress Selected" Click="Suppress_Click" Width="140" Height="30" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
         </GroupBox>
 
         <DataGrid x:Name="FindingsGrid" Grid.Row="2" AutoGenerateColumns="False" IsReadOnly="True" MouseDoubleClick="FindingsGrid_MouseDoubleClick">
@@ -39,6 +78,8 @@
                 <DataGridTextColumn Header="Severity" Binding="{Binding Severity}" Width="100"/>
                 <DataGridTextColumn Header="Component" Binding="{Binding Component}" Width="200"/>
                 <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100"/>
+                <DataGridTextColumn Header="Suppressed" Binding="{Binding Suppressed}" Width="80"/>
+                <DataGridTextColumn Header="Ignored Until" Binding="{Binding IgnoredUntil}" Width="150"/>
                 <DataGridTextColumn Header="Resolved At" Binding="{Binding ResolvedAt}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>

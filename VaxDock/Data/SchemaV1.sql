@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS Devices (
     Id              TEXT PRIMARY KEY,
     LastSeen        TEXT NOT NULL,
     OsVersion       TEXT,
-    BiosString      TEXT
+    BiosString      TEXT,
+    AssetCriticality TEXT DEFAULT 'UNCLASSIFIED'
 );
 
 CREATE TABLE IF NOT EXISTS Scans (
@@ -12,7 +13,9 @@ CREATE TABLE IF NOT EXISTS Scans (
     PatchLevel      TEXT,
     RawJson         TEXT NOT NULL,
     Quarantined     INTEGER DEFAULT 0,
-    IngestedAt      TEXT NOT NULL
+    IngestedAt      TEXT NOT NULL,
+    Completeness    TEXT,
+    DefinitionsPackGenerated TEXT
 );
 
 CREATE TABLE IF NOT EXISTS Findings (
@@ -26,7 +29,10 @@ CREATE TABLE IF NOT EXISTS Findings (
     RemediationId   TEXT,
     ResolvedAt      TEXT,
     EscalatedAt     TEXT,
-    DefinitionsPackVersion TEXT NOT NULL
+    DefinitionsPackVersion TEXT NOT NULL,
+    Suppressed      INTEGER DEFAULT 0,
+    SuppressReason  TEXT,
+    IgnoredUntil    TEXT
 );
 
 CREATE TABLE IF NOT EXISTS PlcNeighbors (
@@ -49,6 +55,15 @@ CREATE TABLE IF NOT EXISTS QuarantinedFiles (
     Filename        TEXT NOT NULL,
     FailureReason   TEXT NOT NULL,
     DetectedAt      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ScanHealthErrors (
+    Id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    ScanId          TEXT NOT NULL REFERENCES Scans(ScanId),
+    Module          TEXT NOT NULL,
+    ErrorCode       TEXT,
+    ErrorMessage    TEXT NOT NULL,
+    Timestamp       TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_findings_device ON Findings(DeviceId);

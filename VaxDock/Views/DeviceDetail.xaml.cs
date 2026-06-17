@@ -20,7 +20,67 @@ public partial class DeviceDetail : Window
         DeviceIdText.Text = _deviceId;
         RefreshFindings();
         var history = App.ScanRepo.GetScanHistory(_deviceId);
-        TrendChart.LoadHistory(history);
+        if (history.Count > 0)
+        {
+            var latest = history.Last();
+            CompletenessText.Text = latest.Completeness;
+            DefinitionsAgeText.Text = string.IsNullOrEmpty(latest.DefinitionsPackGenerated) ? "Unknown" : latest.DefinitionsPackGenerated;
+            LastScanText.Text = latest.Timestamp;
+
+            // Determine status
+            bool isStale = DateTime.TryParse(latest.Timestamp, out DateTime scanTime) && (DateTime.UtcNow - scanTime).TotalDays > 30;
+            bool isIncomplete = latest.Completeness != "100%";
+            bool isHighRisk = latest.RiskScore > 75;
+
+            if (isStale)
+            {
+                AssessmentStatusText.Text = "STALE";
+                AssessmentStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.Gray);
+            }
+            else if (isIncomplete || isHighRisk)
+            {
+                AssessmentStatusText.Text = "WARNING";
+                AssessmentStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 165, 0)); // Orange
+            }
+            else
+            {
+                AssessmentStatusText.Text = "HEALTHY";
+                AssessmentStatusText.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(51, 255, 107)); // Green
+            }
+        }
+
+        var summaries = App.DeviceRepo.GetDeviceSummaries();
+        var currentDevice = System.Linq.Enumerable.FirstOrDefault(summaries, d => d.Id == _deviceId);
+        if (currentDevice != null)
+        {
+            foreach (System.Windows.Controls.ComboBoxItem item in CriticalityCombo.Items)
+            {
+                if (item.Content.ToString() == currentDevice.AssetCriticality)
+                {
+                    CriticalityCombo.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+    }
+
+    private void Criticality_Changed(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (CriticalityCombo.SelectedItem is System.Windows.Controls.ComboBoxItem selectedItem && selectedItem.Content != null)
+        {
+            App.DeviceRepo.UpdateAssetCriticality(_deviceId, selectedItem.Content.ToString());
+        }
+    }
+
+    private void Suppress_Click(object sender, RoutedEventArgs e)
+    {
+        if (FindingsGrid.SelectedItem is FindingDto selectedFinding)
+        {
+            // Defaulting to 30 days mandatory expiry for MVP
+            App.FindingRepo.SuppressFinding(selectedFinding.Id, "Operator Suppressed", 30);
+            RefreshFindings();
+            MessageBox.Show("Finding suppressed for 30 days.", "Suppressed", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     private void RefreshFindings()

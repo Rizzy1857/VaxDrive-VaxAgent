@@ -13,7 +13,17 @@
         
         <!-- HEADER -->
         <StackPanel Grid.Row="0">
-            <TextBlock Text="VaxDock Command Center" Style="{StaticResource HeadingStyle}" Margin="0,0,0,10"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="VaxDock Command Center" Style="{StaticResource HeadingStyle}" Margin="0,0,0,10"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="Plant Risk Score: " FontWeight="Bold" FontSize="18" VerticalAlignment="Center" Foreground="{StaticResource AccentCyanBrush}"/>
+                    <TextBlock x:Name="PlantRiskScoreText" Text="-" FontSize="24" FontWeight="Bold" VerticalAlignment="Center" Foreground="{StaticResource TextLightBrush}"/>
+                </StackPanel>
+            </Grid>
             
             <Border x:Name="CadenceAlertBanner" Background="#33FF6B6B" BorderBrush="#FF6B6B" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,15" Visibility="Collapsed">
                 <Grid>
@@ -83,6 +93,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="Device ID" Binding="{Binding Id}" Width="*"/>
                 <DataGridTextColumn Header="Last Seen (UTC)" Binding="{Binding LastSeen}" Width="Auto"/>
+                <DataGridTextColumn Header="Criticality" Binding="{Binding AssetCriticality}" Width="Auto"/>
                 <DataGridTextColumn Header="Critical Findings" Binding="{Binding CriticalCount}" Width="Auto"/>
                 <DataGridTextColumn Header="High Findings" Binding="{Binding HighCount}" Width="Auto"/>
             </DataGrid.Columns>

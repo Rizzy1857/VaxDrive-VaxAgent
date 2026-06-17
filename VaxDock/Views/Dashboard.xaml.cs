@@ -39,6 +39,7 @@ public partial class Dashboard : Window
         var summaries = App.DeviceRepo.GetDeviceSummaries();
         DevicesGrid.ItemsSource = summaries;
         TotalDevicesText.Text = summaries.Count.ToString();
+        PlantRiskScoreText.Text = CalculatePlantRiskScore(summaries).ToString();
 
         if (_isCadenceAlertDismissed)
         {
@@ -172,6 +173,28 @@ public partial class Dashboard : Window
             var detailWindow = new DeviceDetail(selectedDevice.Id);
             detailWindow.Owner = this;
             detailWindow.ShowDialog();
+            RefreshData(); // Refresh in case criticality changed
         }
+    }
+
+    private int CalculatePlantRiskScore(System.Collections.Generic.IEnumerable<DeviceSummary> devices)
+    {
+        double totalScore = 0;
+        int count = 0;
+        foreach (var d in devices)
+        {
+            double mult = d.AssetCriticality switch
+            {
+                "CRITICAL" => 2.5,
+                "HIGH" => 2.0,
+                "MEDIUM" => 1.5,
+                "LOW" => 1.0,
+                _ => 1.0
+            };
+            double rawScore = (d.CriticalCount * 10 + d.HighCount * 7) * mult;
+            totalScore += Math.Min(100, rawScore);
+            count++;
+        }
+        return count == 0 ? 0 : (int)Math.Round(totalScore / count);
     }
 }

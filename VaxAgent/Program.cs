@@ -32,7 +32,7 @@ public static class Program
             DefinitionPack? pack = loader.Load(defsPath);
             if (pack == null)
             {
-                Console.WriteLine("[!] Warning: Could not load definition pack. Proceeding with baseline checks only.");
+                Console.WriteLine("[!] Definition verification failed. Skipping CVE matching, but continuing inventory collection.");
             }
 
             // 3. Initialize Context
@@ -41,6 +41,11 @@ public static class Program
                 DefinitionsPath = defsPath,
                 ResultsPath = resultsPath
             };
+
+            if (pack != null)
+            {
+                context.Result.DefinitionsPackGenerated = pack.Generated;
+            }
 
             // 4. Assemble Checks
             var checks = new ICheck[]

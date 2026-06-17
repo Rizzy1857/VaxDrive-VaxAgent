@@ -15,6 +15,9 @@ public sealed class ScanResult
     [JsonPropertyName("definitions_pack_version")]
     public string DefinitionsPackVersion { get; set; } = "1.0.0";
 
+    [JsonPropertyName("definitions_pack_generated")]
+    public string DefinitionsPackGenerated { get; set; } = string.Empty;
+
     [JsonPropertyName("timestamp")]
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
@@ -39,6 +42,9 @@ public sealed class ScanResult
     [JsonPropertyName("plc_neighbors")]
     public List<PlcNeighbor> PlcNeighbors { get; set; } = new List<PlcNeighbor>();
 
-    [JsonIgnore]
-    public Dictionary<string, string> CheckErrors { get; } = new Dictionary<string, string>();
+    [JsonPropertyName("scan_completeness")]
+    public string ScanCompleteness { get; set; } = "100%";
+
+    [JsonPropertyName("check_errors")]
+    public Dictionary<string, string> CheckErrors { get; set; } = new Dictionary<string, string>();
 }

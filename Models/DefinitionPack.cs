@@ -77,8 +77,8 @@ public sealed class RemediationCard
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
-    [JsonPropertyName("steps")]
-    public List<string> Steps { get; set; } = new List<string>();
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty; // PatchAvailable, VendorAdvisory, IsolationRecommended, UnsupportedSoftware
 }
 
 public sealed class UsbAllowlistEntry

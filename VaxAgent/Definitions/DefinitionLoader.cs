@@ -16,12 +16,34 @@ public sealed class DefinitionLoader
 
         try
         {
-            // TODO: In Phase 2, verify HMAC signature of the pack before deserializing!
-            string json = File.ReadAllText(definitionsPath);
+            string sigPath = Path.ChangeExtension(definitionsPath, ".sig");
+            if (!File.Exists(sigPath))
+            {
+                Console.WriteLine("[!] Definition verification failed: Missing .sig file.");
+                return null;
+            }
+
+            byte[] jsonBytes = File.ReadAllBytes(definitionsPath);
+            byte[] providedSig = File.ReadAllBytes(sigPath);
+
+            // Hardcoded public key / HMAC key for MVP definition verification
+            byte[] defKey = System.Text.Encoding.UTF8.GetBytes("VAXDRIVE-DEF-KEY-V1");
+            using (var hmac = new System.Security.Cryptography.HMACSHA256(defKey))
+            {
+                byte[] computedSig = hmac.ComputeHash(jsonBytes);
+                if (!System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(computedSig, providedSig))
+                {
+                    Console.WriteLine("[!] Definition verification failed: Invalid HMAC signature.");
+                    return null;
+                }
+            }
+
+            string json = System.Text.Encoding.UTF8.GetString(jsonBytes);
             return JsonSerializer.Deserialize<DefinitionPack>(json);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[!] Definition verification failed: {ex.Message}");
             return null; // Silent fail if corrupt, CveMatchCheck handles null pack gracefully
         }
 #elif NET35

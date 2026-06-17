@@ -34,8 +34,8 @@ public sealed class ScanRepository
             {
                 cmdScan.Transaction = transaction;
                 cmdScan.CommandText = @"
-                    INSERT INTO Scans (ScanId, DeviceId, Timestamp, PatchLevel, RawJson, IngestedAt)
-                    VALUES (@scanId, @deviceId, @timestamp, @patchLevel, @rawJson, @ingestedAt)
+                    INSERT INTO Scans (ScanId, DeviceId, Timestamp, PatchLevel, RawJson, IngestedAt, Completeness, DefinitionsPackGenerated)
+                    VALUES (@scanId, @deviceId, @timestamp, @patchLevel, @rawJson, @ingestedAt, @completeness, @defGenerated)
                     ON CONFLICT(ScanId) DO NOTHING;";
                 cmdScan.Parameters.AddWithValue("@scanId", scan.ScanId);
                 cmdScan.Parameters.AddWithValue("@deviceId", scan.DeviceFingerprint);
@@ -43,6 +43,8 @@ public sealed class ScanRepository
                 cmdScan.Parameters.AddWithValue("@patchLevel", scan.PatchLevel ?? (object)DBNull.Value);
                 cmdScan.Parameters.AddWithValue("@rawJson", rawJson);
                 cmdScan.Parameters.AddWithValue("@ingestedAt", DateTime.UtcNow.ToString("O"));
+                cmdScan.Parameters.AddWithValue("@completeness", scan.ScanCompleteness ?? "Unknown");
+                cmdScan.Parameters.AddWithValue("@defGenerated", scan.DefinitionsPackGenerated ?? (object)DBNull.Value);
                 
                 int affected = cmdScan.ExecuteNonQuery();
                 if (affected == 0) 
@@ -109,6 +111,24 @@ public sealed class ScanRepository
                 }
             }
 
+            // Insert ScanHealthErrors
+            if (scan.CheckErrors != null)
+            {
+                foreach (var kvp in scan.CheckErrors)
+                {
+                    using SqliteCommand cmdErr = conn.CreateCommand();
+                    cmdErr.Transaction = transaction;
+                    cmdErr.CommandText = @"
+                        INSERT INTO ScanHealthErrors (ScanId, Module, ErrorMessage, Timestamp)
+                        VALUES (@scanId, @module, @errMsg, @timestamp);";
+                    cmdErr.Parameters.AddWithValue("@scanId", scan.ScanId);
+                    cmdErr.Parameters.AddWithValue("@module", kvp.Key);
+                    cmdErr.Parameters.AddWithValue("@errMsg", kvp.Value);
+                    cmdErr.Parameters.AddWithValue("@timestamp", scan.Timestamp.ToString("O"));
+                    cmdErr.ExecuteNonQuery();
+                }
+            }
+
             transaction.Commit();
         }
         catch (Exception)
@@ -124,12 +144,19 @@ public sealed class ScanRepository
         using SqliteCommand cmd = conn.CreateCommand();
         cmd.CommandText = @"
             SELECT s.ScanId, s.Timestamp,
-                   COUNT(CASE WHEN f.Severity = 'CRITICAL' AND f.ResolvedAt IS NULL THEN 1 END) AS CriticalCount,
-                   COUNT(CASE WHEN f.ResolvedAt IS NOT NULL THEN 1 END) AS ResolvedCount
+                   COUNT(CASE WHEN f.Severity = 'CRITICAL' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS CriticalCount,
+                   COUNT(CASE WHEN f.Severity = 'HIGH' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS HighCount,
+                   COUNT(CASE WHEN f.Severity = 'MEDIUM' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS MediumCount,
+                   COUNT(CASE WHEN f.Severity = 'LOW' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS LowCount,
+                   COUNT(CASE WHEN f.ResolvedAt IS NOT NULL THEN 1 END) AS ResolvedCount,
+                   d.AssetCriticality,
+                   s.Completeness,
+                   s.DefinitionsPackGenerated
             FROM Scans s
+            JOIN Devices d ON d.Id = s.DeviceId
             LEFT JOIN Findings f ON f.ScanId = s.ScanId
             WHERE s.DeviceId = @deviceId
-            GROUP BY s.ScanId, s.Timestamp
+            GROUP BY s.ScanId, s.Timestamp, d.AssetCriticality, s.Completeness, s.DefinitionsPackGenerated
             ORDER BY s.Timestamp ASC";
         cmd.Parameters.AddWithValue("@deviceId", deviceId);
 
@@ -137,12 +164,33 @@ public sealed class ScanRepository
         using SqliteDataReader reader = cmd.ExecuteReader();
         while (reader.Read())
         {
+            int crit = reader.GetInt32(2);
+            int high = reader.GetInt32(3);
+            int med = reader.GetInt32(4);
+            int low = reader.GetInt32(5);
+            string criticality = reader.GetString(7);
+
+            double mult = criticality switch
+            {
+                "CRITICAL" => 2.5,
+                "HIGH" => 2.0,
+                "MEDIUM" => 1.5,
+                "LOW" => 1.0,
+                _ => 1.0
+            };
+
+            double rawScore = (crit * 10 + high * 7 + med * 4 + low * 1) * mult;
+            int riskScore = Math.Min(100, (int)Math.Round(rawScore));
+
             results.Add(new ScanSummary
             {
                 ScanId = reader.GetString(0),
                 Timestamp = reader.GetString(1),
-                CriticalCount = reader.GetInt32(2),
-                ResolvedCount = reader.GetInt32(3)
+                CriticalCount = crit,
+                ResolvedCount = reader.GetInt32(6),
+                RiskScore = riskScore,
+                Completeness = reader.IsDBNull(8) ? "100%" : reader.GetString(8),
+                DefinitionsPackGenerated = reader.IsDBNull(9) ? "" : reader.GetString(9)
             });
         }
         return results;
@@ -155,4 +203,7 @@ public sealed class ScanSummary
     public string Timestamp { get; init; } = "";
     public int CriticalCount { get; init; }
     public int ResolvedCount { get; init; }
+    public int RiskScore { get; init; }
+    public string Completeness { get; init; } = "100%";
+    public string DefinitionsPackGenerated { get; init; } = "";
 }

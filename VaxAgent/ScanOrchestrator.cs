@@ -78,6 +78,15 @@ public sealed class ScanOrchestrator
             }
         }
 
+        int totalChecks = 0;
+        foreach (var _ in _checks) totalChecks++;
+        int failedChecks = context.Result.CheckErrors.Count;
+        int successfulChecks = totalChecks - failedChecks;
+        if (totalChecks > 0)
+        {
+            context.Result.ScanCompleteness = $"{Math.Round((double)successfulChecks / totalChecks * 100)}%";
+        }
+
         return context.Result;
     }
 }

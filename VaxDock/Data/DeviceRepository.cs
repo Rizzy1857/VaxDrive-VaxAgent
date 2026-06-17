@@ -10,6 +10,7 @@ public sealed class DeviceSummary
     public string LastSeen { get; init; } = "";
     public int CriticalCount { get; init; }
     public int HighCount { get; init; }
+    public string AssetCriticality { get; init; } = "UNCLASSIFIED";
 }
 
 public sealed class DeviceRepository
@@ -21,8 +22,9 @@ public sealed class DeviceRepository
         // Senior Engineer Trap Avoided: Compute severity counts directly in SQL (GROUP BY), not in C# LINQ
         cmd.CommandText = @"
             SELECT d.Id, d.LastSeen,
-                   COUNT(CASE WHEN f.Severity = 'CRITICAL' AND f.ResolvedAt IS NULL THEN 1 END) AS CriticalCount,
-                   COUNT(CASE WHEN f.Severity = 'HIGH' AND f.ResolvedAt IS NULL THEN 1 END) AS HighCount
+                   COUNT(CASE WHEN f.Severity = 'CRITICAL' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS CriticalCount,
+                   COUNT(CASE WHEN f.Severity = 'HIGH' AND f.ResolvedAt IS NULL AND f.Suppressed = 0 THEN 1 END) AS HighCount,
+                   d.AssetCriticality
             FROM Devices d
             LEFT JOIN Findings f ON f.DeviceId = d.Id
             GROUP BY d.Id
@@ -37,7 +39,8 @@ public sealed class DeviceRepository
                 Id = reader.GetString(0),
                 LastSeen = reader.GetString(1),
                 CriticalCount = reader.GetInt32(2),
-                HighCount = reader.GetInt32(3)
+                HighCount = reader.GetInt32(3),
+                AssetCriticality = reader.GetString(4)
             });
         }
         return results;
@@ -74,5 +77,18 @@ public sealed class DeviceRepository
             results.Add(reader.GetString(0));
         }
         return results;
+    }
+
+    public void UpdateAssetCriticality(string deviceId, string criticality)
+    {
+        SqliteConnection conn = DatabaseBootstrap.GetConnection();
+        using SqliteCommand cmd = conn.CreateCommand();
+        cmd.CommandText = @"
+            UPDATE Devices 
+            SET AssetCriticality = @criticality
+            WHERE Id = @deviceId";
+        cmd.Parameters.AddWithValue("@criticality", criticality);
+        cmd.Parameters.AddWithValue("@deviceId", deviceId);
+        cmd.ExecuteNonQuery();
     }
 }
