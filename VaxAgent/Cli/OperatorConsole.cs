@@ -78,11 +78,11 @@ public class OperatorConsole
                 
             case ConsoleKey.R:
                 Console.SetCursorPosition(0, 12);
-                Console.WriteLine("--> Triggering manual YARA rescan...              ");
-                // Mock execution
-                _yaraHits++;
-                _lastYaraRule = "Manual_Scan_Hit";
-                await Task.Delay(1000).ConfigureAwait(false);
+                Console.WriteLine("--> Executing REAL VaxAgent Orchestrator...       ");
+                await Task.Run(() => VaxDrive.VaxAgent.Program.Main(new string[0])).ConfigureAwait(false);
+                _yaraHits++; // Increment visually to show completion
+                _lastYaraRule = "Real_Scan_Completed";
+                await Task.Delay(1500).ConfigureAwait(false);
                 break;
                 
         }

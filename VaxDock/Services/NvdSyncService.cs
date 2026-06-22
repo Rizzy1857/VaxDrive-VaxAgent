@@ -61,68 +61,84 @@ public class NvdSyncService
 
         foreach (var query in queries)
         {
-            try
+            int maxRetries = 5;
+            int currentRetry = 0;
+            bool success = false;
+
+            while (!success && currentRetry < maxRetries)
             {
-                string encodedValue = Uri.EscapeDataString(query.Value);
-                string url = query.Type == "keyword" 
-                    ? $"https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=100&keywordSearch={encodedValue}"
-                    : $"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={encodedValue}";
-
-                var response = await _client.GetAsync(url);
-                response.EnsureSuccessStatusCode();
-
-                var jsonString = await response.Content.ReadAsStringAsync();
-                using var doc = JsonDocument.Parse(jsonString);
-
-                var vulnerabilities = doc.RootElement.GetProperty("vulnerabilities");
-                foreach (var vuln in vulnerabilities.EnumerateArray())
+                try
                 {
-                    var cve = vuln.GetProperty("cve");
-                    string id = cve.GetProperty("id").GetString() ?? "UNKNOWN";
+                    string encodedValue = Uri.EscapeDataString(query.Value);
+                    string url = query.Type == "keyword" 
+                        ? $"https://services.nvd.nist.gov/rest/json/cves/2.0?resultsPerPage=100&keywordSearch={encodedValue}"
+                        : $"https://services.nvd.nist.gov/rest/json/cves/2.0?cveId={encodedValue}";
+
+                    var response = await _client.GetAsync(url);
                     
-                    string severity = "Medium";
-                    if (cve.TryGetProperty("metrics", out var metrics) && metrics.TryGetProperty("cvssMetricV31", out var v31Array) && v31Array.GetArrayLength() > 0)
+                    if (response.StatusCode == System.Net.HttpStatusCode.ServiceUnavailable ||
+                        response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                     {
-                        severity = v31Array[0].GetProperty("cvssData").GetProperty("baseSeverity").GetString() ?? "Medium";
-                    }
-                    else if (metrics.TryGetProperty("cvssMetricV2", out var v2Array) && v2Array.GetArrayLength() > 0)
-                    {
-                        severity = v2Array[0].GetProperty("baseSeverity").GetString() ?? "Medium";
+                        throw new HttpRequestException($"Rate limit or 503 hit. Status: {response.StatusCode}");
                     }
 
-                    if (pack.SoftwareCveRules.Exists(r => r.Id == id)) continue;
+                    response.EnsureSuccessStatusCode();
 
-                    pack.SoftwareCveRules.Add(new SoftwareCveRule
-                    {
-                        Id = id,
-                        Severity = severity,
-                        Component = query.Value,
-                        Status = "Active",
-                        RemediationId = $"REM-{id}",
-                        Match = new RuleMatch { Type = "installed_software", SoftwareName = query.Type == "keyword" ? query.Value : "Target Software", MinVersion = "0.0", MaxVersion = "9.9" }
-                    });
+                    var jsonString = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(jsonString);
 
-                    pack.RemediationCards.Add(new RemediationCard
+                    var vulnerabilities = doc.RootElement.GetProperty("vulnerabilities");
+                    foreach (var vuln in vulnerabilities.EnumerateArray())
                     {
-                        Id = $"REM-{id}",
-                        Title = $"Remediate {id}",
-                        Status = "VendorAdvisory"
-                    });
+                        var cve = vuln.GetProperty("cve");
+                        string id = cve.GetProperty("id").GetString() ?? "UNKNOWN";
+                        
+                        string severity = "Medium";
+                        if (cve.TryGetProperty("metrics", out var metrics) && metrics.TryGetProperty("cvssMetricV31", out var v31Array) && v31Array.GetArrayLength() > 0)
+                        {
+                            severity = v31Array[0].GetProperty("cvssData").GetProperty("baseSeverity").GetString() ?? "Medium";
+                        }
+                        else if (metrics.TryGetProperty("cvssMetricV2", out var v2Array) && v2Array.GetArrayLength() > 0)
+                        {
+                            severity = v2Array[0].GetProperty("baseSeverity").GetString() ?? "Medium";
+                        }
+
+                        if (pack.SoftwareCveRules.Exists(r => r.Id == id)) continue;
+
+                        pack.SoftwareCveRules.Add(new SoftwareCveRule
+                        {
+                            Id = id,
+                            Severity = severity,
+                            Component = query.Value,
+                            Status = "Active",
+                            RemediationId = $"REM-{id}",
+                            Match = new RuleMatch { Type = "installed_software", SoftwareName = query.Type == "keyword" ? query.Value : "Target Software", MinVersion = "0.0", MaxVersion = "9.9" }
+                        });
+
+                        pack.RemediationCards.Add(new RemediationCard
+                        {
+                            Id = $"REM-{id}",
+                            Title = $"Remediate {id}",
+                            Status = "VendorAdvisory"
+                        });
+                    }
+                    
+                    success = true;
+                    await Task.Delay(2000); // 2 second delay to respect API limits
                 }
-                
-                await Task.Delay(1500); // slightly faster delay to account for larger query set
-            }
-            catch (HttpRequestException ex)
-            {
-                errors.Add($"Failed for '{query.Value}': {ex.Message}");
-            }
-            catch (JsonException ex)
-            {
-                errors.Add($"Failed for '{query.Value}': {ex.Message}");
-            }
-            catch (TaskCanceledException ex)
-            {
-                errors.Add($"Failed for '{query.Value}': {ex.Message}");
+                catch (Exception ex) when (ex is HttpRequestException || ex is JsonException || ex is TaskCanceledException)
+                {
+                    currentRetry++;
+                    if (currentRetry >= maxRetries)
+                    {
+                        errors.Add($"Failed for '{query.Value}' after {maxRetries} retries: {ex.Message}");
+                    }
+                    else
+                    {
+                        int delayMs = (int)Math.Pow(2, currentRetry) * 1000 + new Random().Next(0, 1000);
+                        await Task.Delay(delayMs);
+                    }
+                }
             }
         }
 

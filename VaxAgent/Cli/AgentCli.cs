@@ -24,9 +24,8 @@ public class AgentCli
             switch (args[0].ToLowerInvariant())
             {
                 case "--scan":
-                    Console.WriteLine("[CLI] Running YaraScanner against running PIDs...");
-                    // YaraScanner logic (mocked call)
-                    Console.WriteLine("[MATCH] (Mock) Found suspicious IEC-104 pattern in PID 1234.");
+                    Console.WriteLine("[CLI] Invoking Scan Orchestrator...");
+                    VaxDrive.VaxAgent.Program.Main(new string[0]);
                     break;
 
                 case "--sync-nvd":
