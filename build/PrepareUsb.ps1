@@ -1,7 +1,10 @@
 param (
     [Parameter(Mandatory=$true)]
     [ValidatePattern("^[A-Za-z]$")]
-    [string]$DriveLetter
+    [string]$DriveLetter,
+
+    [Parameter(Mandatory=$false)]
+    [int]$DiskNumber = -1
 )
 
 # Show all errors in the terminal
@@ -28,11 +31,20 @@ if ($DriveLetter -eq $sysDrive) {
     exit 1
 }
 
-# 2. Format volume and ensure clean access (handles OS boot drives)
+# 2. Format volume and ensure clean access (handles write-protection and OS boot drives)
 try {
-    Write-Host "Attempting to clean the entire disk for clean access..."
-    $partition = Get-Partition -DriveLetter $DriveLetter -ErrorAction Stop
-    $disk = Get-Disk -Number $partition.DiskNumber -ErrorAction Stop
+    if ($DiskNumber -ge 0) {
+        $disk = Get-Disk -Number $DiskNumber -ErrorAction Stop
+    } else {
+        try {
+            $partition = Get-Partition -DriveLetter $DriveLetter -ErrorAction Stop
+            $disk = Get-Disk -Number $partition.DiskNumber -ErrorAction Stop
+        } catch {
+            Write-Error "Could not find a partition for Drive Letter $DriveLetter. The USB drive might be wiped or corrupted."
+            Write-Error "Please run 'Get-Disk' in PowerShell to find your USB disk number, then run this script with: .\PrepareUsb.ps1 -DriveLetter $DriveLetter -DiskNumber <YourDiskNumber>"
+            exit 1
+        }
+    }
     
     # Safety check to avoid wiping system or boot disk
     if ($disk.IsBoot -or $disk.IsSystem) {
@@ -40,23 +52,41 @@ try {
         exit 1
     }
     
-    Write-Host "Clearing disk $($disk.Number)..."
-    Clear-Disk -Number $disk.Number -RemoveData -RemoveOEM -Confirm:$false -ErrorAction Stop
+    Write-Host "Step A: Removing registry-level USB write protection if present..."
+    $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\StorageDevicePolicies"
+    if (Test-Path $regPath) {
+        Set-ItemProperty -Path $regPath -Name "WriteProtect" -Value 0 -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "Step B: Running diskpart sequence to remove disk write protection and format disk $($disk.Number)..."
+    $diskpartScript = @"
+select disk $($disk.Number)
+attributes disk clear readonly
+clean
+create partition primary
+select partition 1
+active
+format fs=exfat label="VAXDRIVE" quick
+assign letter=$DriveLetter
+exit
+"@
+    $tempScriptPath = Join-Path $env:TEMP "vaxdrive_diskpart_$([guid]::NewGuid()).txt"
+    $diskpartScript | Set-Content -Path $tempScriptPath -Encoding Ascii
     
-    Write-Host "Initializing disk $($disk.Number)..."
-    Initialize-Disk -Number $disk.Number -PartitionStyle MBR -ErrorAction Stop
+    $dpOutput = diskpart /s $tempScriptPath
+    Write-Host $dpOutput
+    Remove-Item -Path $tempScriptPath -Force -ErrorAction SilentlyContinue
     
-    Write-Host "Creating new active partition..."
-    New-Partition -DiskNumber $disk.Number -UseMaximumSize -IsActive -DriveLetter $DriveLetter -ErrorAction Stop | Format-Volume -FileSystem exFAT -NewFileSystemLabel "VAXDRIVE" -Confirm:$false -Force -ErrorAction Stop
-} catch {
-    Write-Warning "Disk clean failed or not supported: $_"
-    Write-Host "Falling back to formatting the existing volume..."
-    try {
-        Format-Volume -DriveLetter $DriveLetter -FileSystem exFAT -NewFileSystemLabel "VAXDRIVE" -Confirm:$false -Force -ErrorAction Stop
-    } catch {
-        Write-Error "Failed to format volume: $_"
+    # Give the OS a moment to mount the new volume
+    Start-Sleep -Seconds 2
+    
+    if (-not (Test-Path "$DriveLetter`:\")) {
+        Write-Error "Diskpart sequence completed, but drive $DriveLetter is not accessible."
         exit 1
     }
+} catch {
+    Write-Error "Failed to prepare the drive: $_"
+    exit 1
 }
 
 # 3. Create folder structure
