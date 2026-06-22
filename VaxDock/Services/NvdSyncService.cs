@@ -12,7 +12,7 @@ public class NvdSyncService
 {
     private readonly HttpClient _client = new HttpClient();
 
-    public async Task SyncDefinitionsAsync(string apiKey)
+    public async Task SyncDefinitionsAsync(string apiKey, IProgress<string>? progress = null)
     {
         if (!_client.DefaultRequestHeaders.Contains("User-Agent"))
         {
@@ -40,8 +40,7 @@ public class NvdSyncService
             ("keyword", "Siemens"),
             ("keyword", "Mitsubishi"),
             ("keyword", "Toyopuc"),
-            ("keyword", "Windows Embedded"),
-            ("keyword", "Windows")
+            ("keyword", "Windows Embedded")
         };
 
         var topCves = new[] { 
@@ -61,6 +60,7 @@ public class NvdSyncService
 
         foreach (var query in queries)
         {
+            progress?.Report($"Querying NVD for {(query.Type == "keyword" ? "keyword" : "CVE")}: {query.Value}...");
             int maxRetries = 5;
             int currentRetry = 0;
             bool success = false;

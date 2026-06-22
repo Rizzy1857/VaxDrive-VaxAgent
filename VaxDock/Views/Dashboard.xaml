@@ -139,6 +139,10 @@
                     <TextBlock Text="NVD API Key:" Margin="0,0,0,5"/>
                     <PasswordBox x:Name="NvdApiKeyBox" Margin="0,0,0,15" Height="30"/>
                     <TextBlock Text="Provide an NVD API key to bypass rate limits when syncing definition packs. You only need to provide this when performing a Sync action." TextWrapping="Wrap" Foreground="{StaticResource TextMutedBrush}"/>
+                    
+                    <!-- Progress UI (Hidden by Default) -->
+                    <ProgressBar x:Name="SyncProgressBar" Visibility="Collapsed" IsIndeterminate="True" Height="10" Margin="0,20,0,10"/>
+                    <TextBlock x:Name="SyncStatusText" Text="" Foreground="#FFDF4C" TextWrapping="Wrap" FontWeight="SemiBold"/>
                 </StackPanel>
             </Border>
 

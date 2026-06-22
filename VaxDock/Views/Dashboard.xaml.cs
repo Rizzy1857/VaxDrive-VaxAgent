@@ -80,18 +80,34 @@ public partial class Dashboard : Window
     {
         string apiKey = NvdApiKeyBox.Password.Trim();
 
+        SyncProgressBar.Visibility = Visibility.Visible;
+        ActionCards.IsEnabled = false;
+
+        var progress = new Progress<string>(msg => 
+        {
+            SyncStatusText.Text = msg;
+        });
+
         try
         {
             var syncService = new Services.NvdSyncService();
-            await syncService.SyncDefinitionsAsync(apiKey);
+            await syncService.SyncDefinitionsAsync(apiKey, progress);
+            SyncStatusText.Text = "Sync Complete!";
             MessageBox.Show("NVD Definitions successfully synced and signed.", "Sync Complete", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 #pragma warning disable CA1031
         catch (Exception ex)
         {
+            SyncStatusText.Text = "Sync Failed.";
             MessageBox.Show($"Failed to sync NVD: {ex.Message}", "Sync Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 #pragma warning restore CA1031
+        finally
+        {
+            SyncProgressBar.Visibility = Visibility.Collapsed;
+            ActionCards.IsEnabled = true;
+            _ = System.Threading.Tasks.Task.Delay(3000).ContinueWith(_ => Dispatcher.InvokeAsync(() => SyncStatusText.Text = ""));
+        }
     }
 
     private void ActionCards_ViewClicked(object sender, EventArgs e)

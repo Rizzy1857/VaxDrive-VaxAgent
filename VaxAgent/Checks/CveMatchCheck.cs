@@ -57,7 +57,19 @@ public sealed class CveMatchCheck : ICheck
 
         foreach (SoftwareEntry software in context.InstalledSoftware)
         {
-            if (software.DisplayName.Contains(targetSoftware, StringComparison.OrdinalIgnoreCase))
+            bool isMatch = false;
+            if (targetSoftware.Length <= 7 || targetSoftware.Equals("Windows", StringComparison.OrdinalIgnoreCase))
+            {
+                // Stricter match for short/generic keywords to avoid flooding false positives
+                isMatch = software.DisplayName.Equals(targetSoftware, StringComparison.OrdinalIgnoreCase) ||
+                          software.DisplayName.StartsWith(targetSoftware + " ", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                isMatch = software.DisplayName.Contains(targetSoftware, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (isMatch)
             {
                 if (!TryParseSemVer(software.DisplayVersion, out Version parsedVersion))
                 {
