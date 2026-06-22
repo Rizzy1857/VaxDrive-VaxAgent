@@ -63,6 +63,7 @@ try {
 select disk $($disk.Number)
 attributes disk clear readonly
 clean
+convert mbr
 create partition primary
 select partition 1
 active
