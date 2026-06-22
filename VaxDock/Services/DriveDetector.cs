@@ -10,10 +10,6 @@ public sealed class DriveDetector : IDisposable
 {
     private readonly IngestPipeline _pipeline;
     private readonly CancellationTokenSource _cts;
-    
-    // For dev: deterministic keys mimicking the stub in Phase 2
-    private readonly byte[] _aesKey = new byte[32];
-    private readonly byte[] _hmacKey = new byte[32];
 
     public event Action? OnIngestCompleted;
 
@@ -47,7 +43,13 @@ public sealed class DriveDetector : IDisposable
                     if (drivePath != lastDetectedDrive)
                     {
                         lastDetectedDrive = drivePath;
-                        await _pipeline.RunAsync(drivePath, _hmacKey, _aesKey);
+                        
+                        // Derive the real keys dynamically using the hardware token from the USB
+                        byte[] hwToken = VaxDrive.VaxAgent.Crypto.HardwareTokenProvider.GetTokenBytes(drivePath);
+                        byte[] hmacKey = VaxDrive.VaxAgent.Crypto.KeyDerivation.DeriveHmacKey(hwToken);
+                        byte[] aesKey = VaxDrive.VaxAgent.Crypto.KeyDerivation.DeriveAesKey(hwToken);
+
+                        await _pipeline.RunAsync(drivePath, hmacKey, aesKey);
                         OnIngestCompleted?.Invoke();
                     }
                 }
