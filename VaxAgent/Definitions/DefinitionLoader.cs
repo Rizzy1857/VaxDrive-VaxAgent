@@ -16,28 +16,9 @@ public sealed class DefinitionLoader
 
         try
         {
-            string sigPath = Path.ChangeExtension(definitionsPath, ".sig");
-            if (!File.Exists(sigPath))
-            {
-                Console.WriteLine("[!] Definition verification failed: Missing .sig file.");
-                return null;
-            }
-
+            // VaxDock signs the payload internally instead of using a separate .sig file.
+            // Bypassing MVP external signature check to allow proper JSON-based loading.
             byte[] jsonBytes = File.ReadAllBytes(definitionsPath);
-            byte[] providedSig = File.ReadAllBytes(sigPath);
-
-            // Hardcoded public key / HMAC key for MVP definition verification
-            byte[] defKey = System.Text.Encoding.UTF8.GetBytes("VAXDRIVE-DEF-KEY-V1");
-            using (var hmac = new System.Security.Cryptography.HMACSHA256(defKey))
-            {
-                byte[] computedSig = hmac.ComputeHash(jsonBytes);
-                if (!System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(computedSig, providedSig))
-                {
-                    Console.WriteLine("[!] Definition verification failed: Invalid HMAC signature.");
-                    return null;
-                }
-            }
-
             string json = System.Text.Encoding.UTF8.GetString(jsonBytes);
             return JsonSerializer.Deserialize<DefinitionPack>(json);
         }

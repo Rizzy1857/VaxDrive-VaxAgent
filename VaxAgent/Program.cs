@@ -19,7 +19,7 @@ public static class Program
 
             // 1. Resolve paths
             string drivePath = GetDrivePath(args);
-            string defsPath = Path.Combine(drivePath, "boot", "definitions.json");
+            string defsPath = Path.Combine(drivePath, "definitions", "definitions.json");
             string resultsPath = Path.Combine(drivePath, "results");
 
             if (!Directory.Exists(resultsPath))
