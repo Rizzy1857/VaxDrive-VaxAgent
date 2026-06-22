@@ -14,8 +14,7 @@ public class OperatorConsole
     private int _topologyCount = 0;
     private int _yaraHits = 0;
     private string _lastYaraRule = "None";
-    private DateTime _lastSync = DateTime.MinValue;
-    private TimeSpan _nextSync = TimeSpan.FromHours(6);
+
     private string[] _recentAlerts = new[] { "No recent alerts", "", "" };
 
     public OperatorConsole()
@@ -54,8 +53,7 @@ public class OperatorConsole
         Console.WriteLine($"TOPOLOGY: {_topologyCount} devices discovered");
         Console.WriteLine($"YARA:     {_yaraHits} hits (last: {_lastYaraRule})");
         
-        string syncStr = _lastSync == DateTime.MinValue ? "Never" : _lastSync.ToString("O");
-        Console.WriteLine($"NVD SYNC: {syncStr} | next in {(int)_nextSync.TotalHours}h {_nextSync.Minutes}m");
+
         Console.WriteLine("--------------------------------------------------");
         Console.WriteLine("ALERTS:");
         foreach (var alert in _recentAlerts)
@@ -63,7 +61,7 @@ public class OperatorConsole
             Console.WriteLine($"  {alert,-46}"); // Fixed width to prevent trailing characters
         }
         Console.WriteLine("--------------------------------------------------");
-        Console.WriteLine("[Q] Quit  [R] Force Rescan  [S] Force NVD Sync    ");
+        Console.WriteLine("[Q] Quit  [R] Force Rescan                        ");
     }
 
     private async Task HandleKeyAsync(ConsoleKey key, CancellationTokenSource appCts)
@@ -87,13 +85,6 @@ public class OperatorConsole
                 await Task.Delay(1000).ConfigureAwait(false);
                 break;
                 
-            case ConsoleKey.S:
-                Console.SetCursorPosition(0, 12);
-                Console.WriteLine("--> Triggering manual NVD Sync...                 ");
-                // Trigger NvdPaginationEngine.SyncAllCvesAsync()
-                _lastSync = DateTime.UtcNow;
-                await Task.Delay(1000).ConfigureAwait(false);
-                break;
         }
         
         // Clear the status line

@@ -6,15 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using VaxDrive.VaxAgent.Crypto.HardwareToken;
 using VaxDrive.VaxDock.Data;
-using VaxDrive.VaxDock.Services.Nvd;
 
 namespace VaxDrive.VaxAgent.Startup;
 
 public class AgentBootstrap
 {
     private readonly IHardwareTokenProvider _tokenProvider;
-    private readonly CveRepository _cveRepository;
-    private readonly NvdPaginationEngine _nvdEngine;
+
     private readonly CancellationTokenSource _cts = new CancellationTokenSource();
 
     public AgentBootstrap()
@@ -60,9 +58,7 @@ public class AgentBootstrap
             Environment.SetEnvironmentVariable("VAXDRIVE_DB_KEY", dbKeyHex);
 
             // 3. Initialize dependencies
-            string dbPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "intelligence.vaxdb");
-            _cveRepository = new CveRepository(dbPath);
-            _nvdEngine = new NvdPaginationEngine(_cveRepository);
+            // (NVD Sync and CVE Repository are handled exclusively by VaxDock on the engineering workstation)
 
             // 4. Hook WM_DEVICECHANGE (conceptual, typically requires a Window handle or Service base)
             Microsoft.Win32.SystemEvents.SessionSwitch += (s, e) => 
@@ -83,23 +79,6 @@ public class AgentBootstrap
     {
         try
         {
-            // 5. Start NvdPaginationEngine as background Task
-            Task.Run(async () =>
-            {
-                while (!_cts.IsCancellationRequested)
-                {
-                    try
-                    {
-                        await _nvdEngine.SyncAllCvesAsync(_cts.Token).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogAudit("NvdSyncError", ex.Message);
-                    }
-                    // 6hr delta sync (simplified schedule logic)
-                    await Task.Delay(TimeSpan.FromHours(6), _cts.Token).ConfigureAwait(false);
-                }
-            }, _cts.Token);
 
             // 6. Start TopologyMap passive listener
             Task.Run(() => StartPassiveListener(), _cts.Token);
