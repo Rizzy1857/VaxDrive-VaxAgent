@@ -5,7 +5,8 @@
 :: Provide fallback hardware token provider for testing
 set VAXDRIVE_HARDWARE_TOKEN_PROVIDER=MOCK
 
-:: Seamlessly execute the real one-shot VaxAgent orchestrator in the background
-start "" "%~dp0VaxAgent.exe" --scan
+:: Execute VaxAgent directly so errors are visible (removed 'start ""')
+"%~dp0VaxAgent.exe" --scan
+pause
 
 exit
