@@ -47,15 +47,12 @@ try {
     Initialize-Disk -Number $disk.Number -PartitionStyle MBR -ErrorAction Stop
     
     Write-Host "Creating new active partition..."
-    New-Partition -DiskNumber $disk.Number -UseMaximumSize -IsActive -DriveLetter $DriveLetter -ErrorAction Stop
-    
-    Write-Host "Formatting volume $drivePath to NTFS with label VAXDRIVE..."
-    Format-Volume -DriveLetter $DriveLetter -FileSystem NTFS -NewFileSystemLabel "VAXDRIVE" -Confirm:$false -Force -ErrorAction Stop
+    New-Partition -DiskNumber $disk.Number -UseMaximumSize -IsActive -DriveLetter $DriveLetter -ErrorAction Stop | Format-Volume -FileSystem exFAT -NewFileSystemLabel "VAXDRIVE" -Confirm:$false -Force -ErrorAction Stop
 } catch {
     Write-Warning "Disk clean failed or not supported: $_"
     Write-Host "Falling back to formatting the existing volume..."
     try {
-        Format-Volume -DriveLetter $DriveLetter -FileSystem NTFS -NewFileSystemLabel "VAXDRIVE" -Confirm:$false -Force -ErrorAction Stop
+        Format-Volume -DriveLetter $DriveLetter -FileSystem exFAT -NewFileSystemLabel "VAXDRIVE" -Confirm:$false -Force -ErrorAction Stop
     } catch {
         Write-Error "Failed to format volume: $_"
         exit 1
