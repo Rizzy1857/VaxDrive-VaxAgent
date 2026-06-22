@@ -43,6 +43,10 @@ $SigntoolPath = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\sig
 & $SigntoolPath sign /sha1 $CertThumbprint /t http://timestamp.digicert.com "$DeployDir\VaxDock\VaxDock.exe"
 #>
 
+Write-Host "[7] Generating signed manifest..."
+& "$RepoRoot\build\PackagePayload.ps1"
+
+
 Write-Host "============================================="
 Write-Host "✅ Production Deployment Package Staged"
 Write-Host "Payload located at: $DeployDir"

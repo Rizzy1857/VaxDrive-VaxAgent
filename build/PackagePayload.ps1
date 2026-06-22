@@ -1,8 +1,15 @@
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
+
+$envFile = Join-Path -Path $PSScriptRoot -ChildPath "..\.env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | Where-Object { $_ -match '^([^#=]+)=(.*)$' } | ForEach-Object {
+        [Environment]::SetEnvironmentVariable($Matches[1].Trim(), $Matches[2].Trim())
+    }
+}
 
 $buildKeyHex = $env:VAXDRIVE_BUILD_KEY
 if ([string]::IsNullOrWhiteSpace($buildKeyHex)) {
-    # Reject build silently without writing anything to stdout
+    Write-Error "VAXDRIVE_BUILD_KEY environment variable is not set."
     exit 1
 }
 
