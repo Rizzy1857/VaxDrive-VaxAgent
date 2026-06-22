@@ -25,7 +25,6 @@ bld/
 
 # VaxDrive specific
 *.vax
-*.env
 deploy_payload/
 updates_staging/
 *.flag

@@ -7,6 +7,13 @@ param (
 # Show all errors in the terminal
 $ErrorActionPreference = "Continue"
 
+$envFile = Join-Path -Path $PSScriptRoot -ChildPath "..\.env"
+if (Test-Path $envFile) {
+    Get-Content $envFile | Where-Object { $_ -match '^([^#=]+)=(.*)$' } | ForEach-Object {
+        [Environment]::SetEnvironmentVariable($Matches[1].Trim(), $Matches[2].Trim())
+    }
+}
+
 if ([string]::IsNullOrWhiteSpace($env:VAXDRIVE_BUILD_KEY)) {
     Write-Error "VAXDRIVE_BUILD_KEY environment variable is not set."
     exit 1
