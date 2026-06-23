@@ -43,7 +43,7 @@ public class SelfUpdateService
         {
             LogAudit("IntegrityCheckFailed", "manifest.json missing.");
             Environment.Exit(3);
-        }
+        }   
 
         if (!VerifyManifestSignature(manifestPath))
         {

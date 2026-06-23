@@ -17,8 +17,11 @@ public sealed class VaxFileWriter
         byte[] json = JsonSerializer.SerializeToUtf8Bytes(result);
         byte[] encrypted = VaxEncryptor.Encrypt(json, encKey, hmacKey);
 
-        string filename = $"SCAN_{result.DeviceFingerprint}_{result.Timestamp:yyyyMMddTHHmmssZ}.vax";
-        string fullPath = Path.Combine(resultsDirPath, filename);
+        string folderName = result.Timestamp.ToString("yyyy-MM-dd");
+        string filename = $"{result.Timestamp:yyyyMMddTHHmmssZ}_{result.DeviceFingerprint}.vax";
+        string targetDir = Path.Combine(resultsDirPath, folderName);
+        Directory.CreateDirectory(targetDir);
+        string fullPath = Path.Combine(targetDir, filename);
         
         // Convert to absolute paths to prevent path traversal tricks
         string absResultDir = Path.GetFullPath(resultsDirPath);

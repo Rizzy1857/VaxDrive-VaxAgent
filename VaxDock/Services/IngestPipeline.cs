@@ -24,7 +24,7 @@ public sealed class IngestPipeline
         string resultsPath = Path.Combine(drivePath, "results");
         if (!Directory.Exists(resultsPath)) return;
 
-        string[] files = Directory.GetFiles(resultsPath, "*.vax");
+        string[] files = Directory.GetFiles(resultsPath, "*.vax", SearchOption.AllDirectories);
 
         foreach (string file in files)
         {
