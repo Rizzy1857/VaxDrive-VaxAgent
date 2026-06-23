@@ -134,19 +134,62 @@
         <!-- Global ComboBox Style -->
         <Style TargetType="ComboBox">
             <Setter Property="Background" Value="{StaticResource BgLighterBrush}"/>
-            <Setter Property="Foreground" Value="Black"/> <!-- Text inside dropdown is usually hard to style purely without deep templates, defaulting to black for combo text to be safe or light depending on system -->
+            <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Margin" Value="5"/>
+        </Style>
+
+        <!-- ComboBox Dropdown Item Style — dark background, light text -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{StaticResource BgLighterBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentHoverBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentCyanBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource BgDarkBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <!-- Global DataGrid Style -->
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="{StaticResource BgDarkBrush}"/>
-            <Setter Property="Foreground" Value="Black"/>
+            <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
             <Setter Property="RowBackground" Value="{StaticResource BgLighterBrush}"/>
             <Setter Property="AlternatingRowBackground" Value="{StaticResource BgDarkBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
             <Setter Property="GridLinesVisibility" Value="Horizontal"/>
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderBrush}"/>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentHoverBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#22FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="5,0"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="Foreground" Value="{StaticResource TextLightBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
         <Style TargetType="DataGridColumnHeader">
             <Setter Property="Background" Value="{StaticResource AccentHoverBrush}"/>

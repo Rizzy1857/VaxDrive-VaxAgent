@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 using VaxDrive.VaxDock.Data;
@@ -93,15 +94,42 @@ public partial class DeviceDetail : Window
     {
         if (FindingsGrid.SelectedItem is FindingDto selectedFinding && !string.IsNullOrEmpty(selectedFinding.RemediationId))
         {
-            // Placeholder: Typically you'd fetch the specific card from DefinitionLoader
-            // For now, stubbing the data to demonstrate the non-technical format requirement.
-            var stubCard = new VaxDrive.Models.RemediationCard {
-                Id = selectedFinding.RemediationId,
-                Title = "What is the risk: " + selectedFinding.CveId,
-                Status = "VendorAdvisory"
-            };
+            VaxDrive.Models.RemediationCard card = null;
+
+            // Load from definition pack
+            string localCacheDir = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "VaxDock", "definitions");
+            if (System.IO.Directory.Exists(localCacheDir))
+            {
+                var latestPackFile = new System.IO.DirectoryInfo(localCacheDir)
+                                    .GetFiles("*.json")
+                                    .OrderByDescending(f => f.LastWriteTime)
+                                    .FirstOrDefault();
+                if (latestPackFile != null)
+                {
+                    try
+                    {
+                        string jsonContent = System.IO.File.ReadAllText(latestPackFile.FullName);
+                        var pack = System.Text.Json.JsonSerializer.Deserialize<VaxDrive.Models.DefinitionPack>(jsonContent);
+                        card = pack?.RemediationCards.FirstOrDefault(c => c.Id == selectedFinding.RemediationId);
+                    }
+                    catch { /* ignore */ }
+                }
+            }
+
+            if (card == null)
+            {
+                // Fallback stub if pack not found or card missing
+                card = new VaxDrive.Models.RemediationCard {
+                    Id = selectedFinding.RemediationId,
+                    Title = "What is the risk: " + selectedFinding.CveId,
+                    Status = "Definition Missing",
+                    Steps = new System.Collections.Generic.List<VaxDrive.Models.RemediationStep> {
+                        new VaxDrive.Models.RemediationStep { StepNumber = 1, Text = "Please run a definition sync to view full remediation steps." }
+                    }
+                };
+            }
             
-            var cardView = new RemediationCardView(selectedFinding.Id, stubCard);
+            var cardView = new RemediationCardView(selectedFinding.Id, card);
             cardView.Owner = this;
             cardView.ShowDialog();
             

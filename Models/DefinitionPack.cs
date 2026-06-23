@@ -69,6 +69,15 @@ public sealed class RuleMatch
     public string? MaxVersion { get; set; }
 }
 
+public sealed class RemediationStep
+{
+    [JsonPropertyName("step_number")]
+    public int StepNumber { get; set; }
+
+    [JsonPropertyName("text")]
+    public string Text { get; set; } = string.Empty;
+}
+
 public sealed class RemediationCard
 {
     [JsonPropertyName("id")]
@@ -79,6 +88,9 @@ public sealed class RemediationCard
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty; // PatchAvailable, VendorAdvisory, IsolationRecommended, UnsupportedSoftware
+
+    [JsonPropertyName("steps")]
+    public List<RemediationStep> Steps { get; set; } = new List<RemediationStep>();
 }
 
 public sealed class UsbAllowlistEntry

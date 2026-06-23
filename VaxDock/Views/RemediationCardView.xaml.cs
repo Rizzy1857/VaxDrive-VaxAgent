@@ -17,6 +17,7 @@ public partial class RemediationCardView : Window
 
         RiskTitle.Text = card.Title;
         StatusText.Text = "Status: " + card.Status;
+        StepsList.ItemsSource = card.Steps;
     }
 
     private void Escalate_Click(object sender, RoutedEventArgs e)
